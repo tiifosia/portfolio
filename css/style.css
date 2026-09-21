@@ -234,7 +234,8 @@ a:hover { color: var(--c-point); }
   font-weight: var(--fw-medium);
   letter-spacing: 0.02em;
   border-bottom: 1px solid var(--c-point-dim);
-  transition: color 0.35s ease, border-color 0.35s ease;
+  transition: color 0.35s ease, border-color 0.35s ease,
+              transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .about__link:hover {
@@ -273,7 +274,8 @@ a:hover { color: var(--c-point); }
   background-color: var(--c-bg-sub);
   overflow: hidden;
   outline: 1px solid transparent;
-  transition: outline-color 0.4s ease;
+  transition: outline-color 0.4s ease,
+              transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .work__thumb img {
@@ -304,6 +306,37 @@ a:hover { color: var(--c-point); }
   font-size: 13px;
   font-weight: var(--fw-light);
   letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   호버 확대
+   transition 은 기본 상태에 선언해야 마우스를 뗄 때도 같은 곡선·속도로
+   돌아온다. (:hover 에만 걸면 복귀가 즉시 끊긴다)
+   ========================================================================== */
+.header__logo,
+.nav__link {
+  /* a 의 color 전환을 유지한 채 transform 만 더한다 */
+  transition: color 0.35s ease,
+              transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* 확대 시 가장자리 계단 현상을 줄인다 */
+.header__logo,
+.nav__link,
+.about__link,
+.work__thumb {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 썸네일은 면적이 커 합성 레이어로 올려두는 편이 부드럽다 */
+.work__thumb { will-change: transform; }
+
+.header__logo:hover,
+.nav__link:hover,
+.about__link:hover,
+.work:hover .work__thumb {
+  transform: scale(1.05);
 }
 
 /* ==========================================================================

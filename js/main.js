@@ -124,7 +124,8 @@
   if (hero) {
     gsap.fromTo(hero,
       { opacity: 0, y: 28 },
-      { opacity: 1, y: 0, duration: 1.1, ease: EASE, delay: 0.15 });
+      { opacity: 1, y: 0, duration: 1.1, ease: EASE, delay: 0.15,
+        clearProps: 'transform,translate,rotate,scale' });
   }
 
   /* 각 섹션 — 화면에 들어올 때 순차 노출 */
@@ -136,6 +137,8 @@
       { opacity: 0, y: 24 },
       {
         opacity: 1, y: 0, duration: 0.9, ease: EASE, stagger: 0.1,
+        /* 인라인 transform 이 남으면 CSS :hover 의 scale 이 무시된다 */
+        clearProps: 'transform,translate,rotate,scale',
         scrollTrigger: { trigger: section, start: 'top 85%' }
       });
   });
