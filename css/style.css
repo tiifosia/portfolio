@@ -182,7 +182,11 @@ a:hover { color: var(--c-point); }
 .header::before {
   top: 0;
   bottom: 0;
-  background-color: rgba(17, 17, 17, 0.72);
+  /* 페이지 배경(#111111)보다 밝은 틴트여야 유리판이 배경과 구분된다.
+     배경과 같은 rgba(17,17,17,*) 를 쓰면 합성 결과가 배경과 동일해져 보이지 않는다.
+     밝힐수록 잘 보이지만 내비 텍스트 대비가 떨어지므로,
+     합성 후 rgb(33,33,35) / 내비 대비 4.87:1 이 되는 지점으로 맞췄다. */
+  background-color: rgba(40, 40, 43, 0.72);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
@@ -205,7 +209,7 @@ a:hover { color: var(--c-point); }
 
 /* backdrop-filter 미지원 환경에서는 불투명도를 올려 가독성을 지킨다 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .header::before { background-color: rgba(17, 17, 17, 0.94); }
+  .header::before { background-color: rgba(32, 32, 35, 0.94); }
 }
 
 /* 로고와 내비게이션을 유리 레이어 위로 올린다 */
