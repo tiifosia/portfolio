@@ -29,7 +29,6 @@
         <em>story by story<span class="accent">.</span></em>
       </h1>
       <p class="hero__desc">영상 크리에이터 정희성.</p>
-      <span class="hero__scroll">Scroll</span>
     </section>
 
     <!-- About -->
@@ -54,34 +53,17 @@
 
         <ul class="works__grid">
           <li class="work">
-            <figure class="work__thumb"></figure>
-            <h3 class="work__title">브랜드 필름 &mdash; Daily Ritual</h3>
-            <p class="work__meta">Brand Film &middot; 2025</p>
-          </li>
-          <li class="work">
-            <figure class="work__thumb"></figure>
-            <h3 class="work__title">뮤직비디오 &mdash; Midnight Blue</h3>
-            <p class="work__meta">Music Video &middot; 2025</p>
-          </li>
-          <li class="work">
-            <figure class="work__thumb"></figure>
-            <h3 class="work__title">캠페인 &mdash; Move Together</h3>
-            <p class="work__meta">Campaign &middot; 2024</p>
-          </li>
-          <li class="work">
-            <figure class="work__thumb"></figure>
-            <h3 class="work__title">다큐멘터리 &mdash; 오래된 골목</h3>
-            <p class="work__meta">Documentary &middot; 2024</p>
-          </li>
-          <li class="work">
-            <figure class="work__thumb"></figure>
-            <h3 class="work__title">제품 필름 &mdash; Form &amp; Function</h3>
-            <p class="work__meta">Product Film &middot; 2024</p>
-          </li>
-          <li class="work">
-            <figure class="work__thumb"></figure>
-            <h3 class="work__title">타이틀 시퀀스 &mdash; Noise</h3>
-            <p class="work__meta">Motion Graphics &middot; 2023</p>
+            <button class="work__trigger" type="button"
+                    data-video-id="5j0lvHHFzhI"
+                    aria-label="작품 제목 영상 재생">
+              <figure class="work__thumb">
+                <img src="https://img.youtube.com/vi/5j0lvHHFzhI/maxresdefault.jpg"
+                     data-fallback="https://img.youtube.com/vi/5j0lvHHFzhI/hqdefault.jpg"
+                     alt="" loading="lazy">
+              </figure>
+            </button>
+            <h3 class="work__title">작품 제목</h3>
+            <p class="work__meta">Work &middot; 2025</p>
           </li>
         </ul>
       </div>
@@ -95,6 +77,14 @@
       <span>Seoul, Korea</span>
     </div>
   </footer>
+
+  <div class="modal" id="modal">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-label="영상 재생">
+      <button class="modal__close" type="button" data-close aria-label="닫기"></button>
+      <div class="modal__frame" id="modal-frame"></div>
+    </div>
+  </div>
 
   <script src="js/main.js"></script>
 </body>
