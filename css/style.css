@@ -44,6 +44,7 @@
   --c-text:      #F5F5F7;  /* 메인 텍스트 */
   --c-text-sub:  #8D8D92;  /* 보조 텍스트 */
   --c-point:     #C3BDFF;  /* 포인트 — 커서/호버/얇은 선에만 */
+  --c-point-dim: rgba(195, 189, 255, 0.35);
   --c-line:      rgba(245, 245, 247, 0.10);
 
   /* 폰트 위계 */
@@ -93,6 +94,8 @@ a {
 }
 a:hover { color: var(--c-point); }
 
+.accent { color: var(--c-point); }
+
 ::selection { background: var(--c-point); color: var(--c-bg); }
 
 :focus-visible {
@@ -121,7 +124,7 @@ a:hover { color: var(--c-point); }
 .section__label {
   display: block;
   margin-bottom: 28px;
-  color: var(--c-text-sub);
+  color: var(--c-point);
   font-size: 12px;
   font-weight: var(--fw-medium);
   letter-spacing: 0.18em;
@@ -254,11 +257,14 @@ a:hover { color: var(--c-point); }
   font-size: 14px;
   font-weight: var(--fw-medium);
   letter-spacing: 0.02em;
-  border-bottom: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--c-point-dim);
   transition: color 0.35s ease, border-color 0.35s ease;
 }
 
-.about__link:hover { border-bottom-color: var(--c-point); }
+.about__link:hover {
+  color: var(--c-point);
+  border-bottom-color: var(--c-point);
+}
 
 /* ==========================================================================
    Works — 썸네일 그리드 (2단계에서 모달 연결)
@@ -278,7 +284,13 @@ a:hover { color: var(--c-point); }
   aspect-ratio: 16 / 9;
   background-color: var(--c-bg-sub);
   overflow: hidden;
+  outline: 1px solid transparent;
+  transition: outline-color 0.4s ease;
 }
+
+.work:hover .work__thumb { outline-color: var(--c-point); }
+
+.work:hover .work__title { color: var(--c-point); }
 
 .work__title {
   margin-top: 20px;
@@ -286,6 +298,7 @@ a:hover { color: var(--c-point); }
   font-weight: var(--fw-medium);
   line-height: 1.45;
   letter-spacing: -0.02em;
+  transition: color 0.35s ease;
 }
 
 .work__meta {
