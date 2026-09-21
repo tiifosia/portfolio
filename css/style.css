@@ -57,6 +57,8 @@
   --fw-heavy:   800;  /* 메인 타이틀 */
 
   /* 레이아웃 */
+  --fs-title: clamp(30px, 4.4vw, 56px);  /* Archive · Jeong Heesung 공용 */
+
   --header-h: 72px;
   --gutter: clamp(24px, 5vw, 80px);
   --max-w: 1440px;
@@ -138,7 +140,7 @@ a:hover { color: var(--c-point); }
 /* 섹션 제목 */
 .section__title {
   max-width: 20ch;
-  font-size: clamp(30px, 4.4vw, 56px);
+  font-size: var(--fs-title);
   font-weight: var(--fw-bold);
   line-height: 1.28;
   letter-spacing: -0.03em;
@@ -219,7 +221,7 @@ a:hover { color: var(--c-point); }
 .about__name {
   margin-top: 4px;
   color: var(--c-text);
-  font-size: clamp(38px, 6.2vw, 76px);
+  font-size: var(--fs-title);
   font-weight: var(--fw-heavy);
   line-height: 1.1;
   letter-spacing: -0.035em;
@@ -228,7 +230,7 @@ a:hover { color: var(--c-point); }
 /* 역할 — 이름보다 작고 얇게, 포인트 컬러로 한 단계 아래 위계 */
 .about__role {
   margin-top: clamp(16px, 2vh, 22px);
-  color: var(--c-point);
+  color: var(--c-text-sub);
   font-size: clamp(16px, 1.6vw, 20px);
   font-weight: var(--fw-medium);
   letter-spacing: -0.01em;
