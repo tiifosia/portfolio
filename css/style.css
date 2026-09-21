@@ -96,6 +96,10 @@ a:hover { color: var(--c-point); }
 
 .accent { color: var(--c-point); }
 
+/* 스크롤 진입 전 상태. GSAP 이 인라인 스타일로 덮어쓰며,
+   GSAP 미로드나 모션 최소화 설정에서는 JS 가 속성을 제거해 즉시 노출한다. */
+[data-reveal] { opacity: 0; }
+
 ::selection { background: var(--c-point); color: var(--c-bg); }
 
 :focus-visible {

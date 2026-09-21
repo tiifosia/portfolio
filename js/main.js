@@ -97,3 +97,61 @@
     if (e.key === 'Escape') close();
   });
 })();
+
+/**
+ * 스크롤 인터랙션 (GSAP + ScrollTrigger)
+ * 절제된 페이드인 · 슬라이드업과 썸네일의 완만한 패럴랙스만 적용한다.
+ */
+(function () {
+  'use strict';
+
+  var items = document.querySelectorAll('[data-reveal]');
+  if (!items.length) return;
+
+  /* GSAP 로드 실패나 모션 최소화 설정에서는 애니메이션 없이 즉시 노출한다 */
+  if (!window.gsap || !window.ScrollTrigger ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    for (var i = 0; i < items.length; i++) items[i].removeAttribute('data-reveal');
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  var EASE = 'power2.out';
+
+  /* 히어로 — 진입 시 한 번 */
+  var hero = document.querySelector('.hero [data-reveal]');
+  if (hero) {
+    gsap.fromTo(hero,
+      { opacity: 0, y: 28 },
+      { opacity: 1, y: 0, duration: 1.1, ease: EASE, delay: 0.15 });
+  }
+
+  /* 각 섹션 — 화면에 들어올 때 순차 노출 */
+  gsap.utils.toArray('.section').forEach(function (section) {
+    var targets = section.querySelectorAll('[data-reveal]');
+    if (!targets.length) return;
+
+    gsap.fromTo(targets,
+      { opacity: 0, y: 24 },
+      {
+        opacity: 1, y: 0, duration: 0.9, ease: EASE, stagger: 0.1,
+        scrollTrigger: { trigger: section, start: 'top 85%' }
+      });
+  });
+
+  /* 썸네일 — 프레임 안에서 이미지만 천천히 흐른다 */
+  gsap.utils.toArray('.work__thumb img').forEach(function (img) {
+    gsap.fromTo(img,
+      { yPercent: -4, scale: 1.1 },
+      {
+        yPercent: 4, scale: 1.1, ease: 'none',
+        scrollTrigger: {
+          trigger: img.closest('.work'),
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: 0.6
+        }
+      });
+  });
+})();

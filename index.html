@@ -24,7 +24,7 @@
 
     <!-- Hero -->
     <section class="container hero">
-      <h1 class="hero__title">
+      <h1 class="hero__title" data-reveal>
         Frame by frame<span class="accent">,</span>
         <em>story by story<span class="accent">.</span></em>
       </h1>
@@ -33,10 +33,10 @@
     <!-- About -->
     <section class="section" id="about">
       <div class="container">
-        <span class="section__label">01 &mdash; About</span>
-        <h2 class="section__title">Director</h2>
-        <p class="section__body"><span class="accent">정희성(tiifosia)</span> &mdash; Directing &amp; Editing</p>
-        <a class="about__link" href="https://instagram.com/tiifosia" target="_blank" rel="noopener">
+        <span class="section__label" data-reveal>01 &mdash; About</span>
+        <h2 class="section__title" data-reveal>Director</h2>
+        <p class="section__body" data-reveal><span class="accent">정희성(tiifosia)</span> &mdash; Directing &amp; Editing</p>
+        <a class="about__link" data-reveal href="https://instagram.com/tiifosia" target="_blank" rel="noopener">
           인스타그램 @tiifosia
         </a>
       </div>
@@ -46,12 +46,12 @@
     <section class="section" id="works">
       <div class="container">
         <div class="works__head">
-          <span class="section__label">02 &mdash; Works</span>
-          <h2 class="section__title">Archive</h2>
+          <span class="section__label" data-reveal>02 &mdash; Works</span>
+          <h2 class="section__title" data-reveal>Archive</h2>
         </div>
 
         <ul class="works__grid">
-          <li class="work">
+          <li class="work" data-reveal>
             <button class="work__trigger" type="button"
                     data-video-id="5j0lvHHFzhI"
                     aria-label="작품 제목 영상 재생">
@@ -85,6 +85,8 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
