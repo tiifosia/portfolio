@@ -221,15 +221,6 @@ a:hover { color: var(--c-point); }
   color: var(--c-text-sub);
 }
 
-.hero__desc {
-  max-width: 44ch;
-  margin-top: clamp(32px, 5vh, 56px);
-  color: var(--c-text-sub);
-  font-size: clamp(15px, 1.3vw, 18px);
-  font-weight: var(--fw-light);
-  line-height: 1.8;
-}
-
 .about__link {
   display: inline-block;
   margin-top: 32px;
