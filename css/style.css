@@ -147,15 +147,6 @@ a:hover { color: var(--c-point); }
   line-height: 1.85;
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px; height: 1px;
-  margin: -1px; padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* ==========================================================================
    헤더
    ========================================================================== */
@@ -213,16 +204,6 @@ a:hover { color: var(--c-point); }
   padding-block: calc(var(--header-h) + 40px) 40px;
 }
 
-.hero__eyebrow {
-  display: block;
-  margin-bottom: 24px;
-  color: var(--c-text-sub);
-  font-size: 13px;
-  font-weight: var(--fw-light);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
 .hero__title {
   font-size: clamp(44px, 9.5vw, 132px);
   font-weight: var(--fw-heavy);
@@ -265,23 +246,25 @@ a:hover { color: var(--c-point); }
   background-color: var(--c-point);
 }
 
+.about__link {
+  display: inline-block;
+  margin-top: 32px;
+  padding-bottom: 5px;
+  color: var(--c-text-sub);
+  font-size: 14px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--c-line);
+  transition: color 0.35s ease, border-color 0.35s ease;
+}
+
+.about__link:hover { border-bottom-color: var(--c-point); }
+
 /* ==========================================================================
    Works — 썸네일 그리드 (2단계에서 모달 연결)
    ========================================================================== */
 .works__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px 32px;
   margin-bottom: clamp(48px, 7vh, 88px);
-}
-
-.works__count {
-  color: var(--c-text-sub);
-  font-size: 13px;
-  font-weight: var(--fw-light);
-  letter-spacing: 0.06em;
 }
 
 .works__grid {
@@ -311,34 +294,6 @@ a:hover { color: var(--c-point); }
   font-size: 13px;
   font-weight: var(--fw-light);
   letter-spacing: 0.02em;
-}
-
-/* ==========================================================================
-   Contact
-   ========================================================================== */
-.contact__mail {
-  display: inline-block;
-  margin-top: 32px;
-  font-size: clamp(24px, 5vw, 64px);
-  font-weight: var(--fw-bold);
-  line-height: 1.2;
-  letter-spacing: -0.03em;
-  word-break: break-all;
-}
-
-.contact__links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 32px;
-  margin-top: clamp(40px, 6vh, 64px);
-}
-
-.contact__links a {
-  color: var(--c-text-sub);
-  font-size: 13px;
-  font-weight: var(--fw-medium);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 /* ==========================================================================
