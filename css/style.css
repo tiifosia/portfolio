@@ -57,6 +57,9 @@
   --fw-heavy:   800;  /* 메인 타이틀 */
 
   /* 레이아웃 */
+  --z-header: 900;   /* 모든 스크롤 콘텐츠 위 */
+  --z-modal:  1000;  /* 헤더까지 덮는 최상단 */
+
   --header-h: 72px;
   --gutter: clamp(24px, 5vw, 80px);
   --max-w: 1440px;
@@ -156,22 +159,59 @@ a:hover { color: var(--c-point); }
 .header {
   position: fixed;
   inset: 0 0 auto 0;
-  z-index: 100;
+  z-index: var(--z-header);
   height: var(--header-h);
   display: flex;
   align-items: center;
-  transition: background-color 0.4s ease, border-color 0.4s ease;
-  border-bottom: 1px solid transparent;
 }
 
-.header.is-scrolled {
+/* 유리 레이어와 하단 실선.
+   backdrop-filter 는 값 자체를 전환하면 계단 현상이 생기므로,
+   필터는 항상 걸어두고 레이어의 투명도만 페이드시킨다. */
+.header::before,
+.header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.header::before {
+  top: 0;
+  bottom: 0;
   background-color: rgba(17, 17, 17, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom-color: var(--c-line);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
+/* 마이크로 보더 */
+.header::after {
+  bottom: 0;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.08);
+  transform-origin: bottom;
+}
+
+.header.is-scrolled::before,
+.header.is-scrolled::after { opacity: 1; }
+
+/* 고해상도에서는 1px 이 두껍게 보이므로 실제 0.5px 헤어라인으로 낮춘다 */
+@media (min-resolution: 2dppx), (-webkit-min-device-pixel-ratio: 2) {
+  .header::after { transform: scaleY(0.5); }
+}
+
+/* backdrop-filter 미지원 환경에서는 불투명도를 올려 가독성을 지킨다 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .header::before { background-color: rgba(17, 17, 17, 0.94); }
+}
+
+/* 로고와 내비게이션을 유리 레이어 위로 올린다 */
 .header__inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -308,7 +348,7 @@ a:hover { color: var(--c-point); }
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
