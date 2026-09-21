@@ -144,16 +144,6 @@ a:hover { color: var(--c-point); }
   letter-spacing: -0.03em;
 }
 
-/* 본문 */
-.section__body {
-  max-width: 56ch;
-  margin-top: 28px;
-  color: var(--c-text-sub);
-  font-size: clamp(15px, 1.2vw, 17px);
-  font-weight: var(--fw-regular);
-  line-height: 1.85;
-}
-
 /* ==========================================================================
    헤더
    ========================================================================== */
@@ -225,13 +215,51 @@ a:hover { color: var(--c-point); }
   color: var(--c-text-sub);
 }
 
+/* 이름 — 이 섹션의 헤드라인. 가장 크고 가장 굵게 */
+.about__name {
+  margin-top: 4px;
+  color: var(--c-text);
+  font-size: clamp(38px, 6.2vw, 76px);
+  font-weight: var(--fw-heavy);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+/* 역할 — 이름보다 작고 얇게, 포인트 컬러로 한 단계 아래 위계 */
+.about__role {
+  margin-top: clamp(16px, 2vh, 22px);
+  color: var(--c-point);
+  font-size: clamp(16px, 1.6vw, 20px);
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.01em;
+}
+
+/* 아이콘은 currentColor 를 써서 텍스트와 항상 같은 색으로 묶인다 */
+.about__icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.about__icon-dot {
+  fill: currentColor;
+  stroke: none;
+}
+
 .about__link {
-  display: inline-block;
-  margin-top: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* 이름 블록과 떨어뜨려 링크임을 분명히 한다 */
+  margin-top: clamp(40px, 6vh, 64px);
   padding-bottom: 5px;
+  /* 호버 전 기본 상태는 항상 보조 텍스트 색 */
   color: var(--c-text-sub);
   font-size: 14px;
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-regular);
   letter-spacing: 0.02em;
   border-bottom: 1px solid var(--c-point-dim);
   transition: color 0.35s ease, border-color 0.35s ease,
