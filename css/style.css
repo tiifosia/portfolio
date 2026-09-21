@@ -1,0 +1,380 @@
+/* ==========================================================================
+   S-Core Dream — 웹폰트
+   CDN(jsdelivr/projectnoonnu)에서 5개 굵기만 선별 로드한다.
+   로컬 폰트로 교체할 경우 src의 url()만 assets/fonts/... 로 바꾸면 된다.
+   ========================================================================== */
+@font-face {
+  font-family: 'S-Core Dream';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-3Light.woff') format('woff');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'S-Core Dream';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-4Regular.woff') format('woff');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'S-Core Dream';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-5Medium.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'S-Core Dream';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-6Bold.woff') format('woff');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'S-Core Dream';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-8Heavy.woff') format('woff');
+  font-weight: 800;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   디자인 토큰
+   ========================================================================== */
+:root {
+  /* 색상 */
+  --c-bg:        #111111;  /* 메인 배경 */
+  --c-bg-sub:    #333333;  /* 서브 배경 */
+  --c-text:      #F5F5F7;  /* 메인 텍스트 */
+  --c-text-sub:  #8D8D92;  /* 보조 텍스트 */
+  --c-point:     #C3BDFF;  /* 포인트 — 커서/호버/얇은 선에만 */
+  --c-line:      rgba(245, 245, 247, 0.10);
+
+  /* 폰트 위계 */
+  --ff: 'S-Core Dream', 'Pretendard', -apple-system, BlinkMacSystemFont,
+        'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --fw-light:   300;  /* 보조 텍스트 */
+  --fw-regular: 400;  /* 본문 */
+  --fw-medium:  500;  /* 라벨 · 내비 */
+  --fw-bold:    600;  /* 섹션 제목 */
+  --fw-heavy:   800;  /* 메인 타이틀 */
+
+  /* 레이아웃 */
+  --header-h: 72px;
+  --gutter: clamp(24px, 5vw, 80px);
+  --max-w: 1440px;
+  --section-pad: clamp(96px, 14vh, 180px);
+}
+
+/* ==========================================================================
+   리셋 & 베이스
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--ff);
+  font-weight: var(--fw-regular);
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, p, figure { margin: 0; }
+ul { margin: 0; padding: 0; list-style: none; }
+img { display: block; max-width: 100%; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.35s ease;
+}
+a:hover { color: var(--c-point); }
+
+::selection { background: var(--c-point); color: var(--c-bg); }
+
+:focus-visible {
+  outline: 1px solid var(--c-point);
+  outline-offset: 4px;
+}
+
+/* ==========================================================================
+   공통 레이아웃 유틸
+   ========================================================================== */
+.container {
+  width: 100%;
+  max-width: var(--max-w);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.section {
+  padding-block: var(--section-pad);
+  border-top: 1px solid var(--c-line);
+  /* 고정 헤더에 가려지지 않도록 앵커 이동 위치를 보정 */
+  scroll-margin-top: var(--header-h);
+}
+
+/* 섹션 번호 라벨 — 보조 위계, 트래킹 넓게 */
+.section__label {
+  display: block;
+  margin-bottom: 28px;
+  color: var(--c-text-sub);
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* 섹션 제목 */
+.section__title {
+  max-width: 20ch;
+  font-size: clamp(30px, 4.4vw, 56px);
+  font-weight: var(--fw-bold);
+  line-height: 1.28;
+  letter-spacing: -0.03em;
+}
+
+/* 본문 */
+.section__body {
+  max-width: 56ch;
+  margin-top: 28px;
+  color: var(--c-text-sub);
+  font-size: clamp(15px, 1.2vw, 17px);
+  font-weight: var(--fw-regular);
+  line-height: 1.85;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   헤더
+   ========================================================================== */
+.header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  transition: background-color 0.4s ease, border-color 0.4s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.header.is-scrolled {
+  background-color: rgba(17, 17, 17, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: var(--c-line);
+}
+
+.header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.header__logo {
+  font-size: 15px;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+}
+
+.nav {
+  display: flex;
+  gap: clamp(20px, 3vw, 40px);
+}
+
+.nav__link {
+  color: var(--c-text-sub);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.06em;
+}
+
+/* ==========================================================================
+   히어로
+   ========================================================================== */
+.hero {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: calc(var(--header-h) + 40px) 40px;
+}
+
+.hero__eyebrow {
+  display: block;
+  margin-bottom: 24px;
+  color: var(--c-text-sub);
+  font-size: 13px;
+  font-weight: var(--fw-light);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.hero__title {
+  font-size: clamp(44px, 9.5vw, 132px);
+  font-weight: var(--fw-heavy);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+}
+
+.hero__title em {
+  display: block;
+  font-style: normal;
+  font-weight: var(--fw-light);
+  color: var(--c-text-sub);
+}
+
+.hero__desc {
+  max-width: 44ch;
+  margin-top: clamp(32px, 5vh, 56px);
+  color: var(--c-text-sub);
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: var(--fw-light);
+  line-height: 1.8;
+}
+
+.hero__scroll {
+  margin-top: clamp(48px, 9vh, 96px);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--c-text-sub);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.hero__scroll::after {
+  content: '';
+  width: 56px;
+  height: 1px;
+  background-color: var(--c-point);
+}
+
+/* ==========================================================================
+   Works — 썸네일 그리드 (2단계에서 모달 연결)
+   ========================================================================== */
+.works__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-bottom: clamp(48px, 7vh, 88px);
+}
+
+.works__count {
+  color: var(--c-text-sub);
+  font-size: 13px;
+  font-weight: var(--fw-light);
+  letter-spacing: 0.06em;
+}
+
+.works__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(28px, 3vw, 48px) clamp(20px, 2vw, 32px);
+}
+
+.work__thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background-color: var(--c-bg-sub);
+  overflow: hidden;
+}
+
+.work__title {
+  margin-top: 20px;
+  font-size: clamp(16px, 1.4vw, 19px);
+  font-weight: var(--fw-medium);
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+}
+
+.work__meta {
+  margin-top: 8px;
+  color: var(--c-text-sub);
+  font-size: 13px;
+  font-weight: var(--fw-light);
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   Contact
+   ========================================================================== */
+.contact__mail {
+  display: inline-block;
+  margin-top: 32px;
+  font-size: clamp(24px, 5vw, 64px);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  word-break: break-all;
+}
+
+.contact__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin-top: clamp(40px, 6vh, 64px);
+}
+
+.contact__links a {
+  color: var(--c-text-sub);
+  font-size: 13px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   푸터
+   ========================================================================== */
+.footer {
+  padding-block: 40px;
+  border-top: 1px solid var(--c-line);
+}
+
+.footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  color: var(--c-text-sub);
+  font-size: 12px;
+  font-weight: var(--fw-light);
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   반응형
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .works__grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  :root { --header-h: 60px; }
+  .works__grid { grid-template-columns: 1fr; }
+  .nav { gap: 18px; }
+  .nav__link { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; }
+}
