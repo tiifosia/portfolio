@@ -73,7 +73,8 @@
   --header-top: 24px;   /* 화면 상단에서 띄우는 거리 */
   --header-w: 800px;    /* 플로팅 바 최대 너비 */
   --header-r: 40px;     /* 캡슐 라운드 (높이의 절반으로 클램프됨) */
-  --header-rim: 3px;    /* 굴절이 발현되는 곡면 두께 */
+  --header-rim:  2px;   /* 굴절이 발현되는 곡면 두께 */
+  --header-line: 1px;   /* 빛이 맺히는 선 두께 — 이 값을 넘기면 면처럼 둔해진다 */
   --gutter: clamp(24px, 5vw, 80px);
   --max-w: 1440px;
   --section-pad: clamp(96px, 14vh, 180px);
@@ -236,16 +237,14 @@ a:hover { color: var(--c-point); }
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  padding: var(--header-rim);
+  /* 면이 아니라 선이어야 한다. 1px 을 넘기는 순간 둔탁해진다. */
+  padding: var(--header-line);
   /* 위쪽은 흰 빛, 아래로 내려오며 포인트 컬러가 감돈다 */
   background: linear-gradient(160deg,
-              rgba(255, 255, 255, 0.45) 0%,
-              rgba(255, 255, 255, 0.10) 32%,
-              rgba(195, 189, 255, 0.55) 68%,
-              rgba(255, 255, 255, 0.12) 100%);
-  /* 두께감은 가장자리에 집중시킨다 */
-  box-shadow: inset 0 0 6px -2px rgba(255, 255, 255, 0.5),
-              inset 0 0 2px 0 rgba(195, 189, 255, 0.35);
+              rgba(255, 255, 255, 0.5)  0%,
+              rgba(255, 255, 255, 0.08) 34%,
+              rgba(195, 189, 255, 0.6)  66%,
+              rgba(255, 255, 255, 0.1)  100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box,
                 linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -264,14 +263,18 @@ a:hover { color: var(--c-point); }
     background-color: rgba(17, 17, 17, 0);
     backdrop-filter: blur(0px) saturate(100%);
     -webkit-backdrop-filter: blur(0px) saturate(100%);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0),
+                inset 0 -1px 1px rgba(255, 255, 255, 0),
+                0 8px 32px rgba(0, 0, 0, 0);
   }
   to {
     background-color: var(--c-glass);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
-    /* 화면에 떠 있는 뎁스 */
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    /* 얇고 단단한 두께감 + 떠 있는 뎁스 */
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15),
+                inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+                0 8px 32px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -304,7 +307,9 @@ a:hover { color: var(--c-point); }
     background-color: var(--c-glass);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15),
+                inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+                0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .header.is-scrolled::before,
