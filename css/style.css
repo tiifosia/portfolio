@@ -57,6 +57,11 @@
   --fw-heavy:   800;  /* 메인 타이틀 */
 
   /* 레이아웃 */
+  /* 유리 — 배경(#111111)보다 밝아야 평평한 구간에서도 판이 인지된다 */
+  --c-glass:      rgba(35, 35, 35, 0.65);
+  --c-glass-line: rgba(255, 255, 255, 0.08);
+  --glass-range:  100px;
+
   --z-header: 9999;   /* 모든 스크롤 콘텐츠 위 */
   --z-modal:  10000;  /* 헤더까지 덮는 최상단 */
 
@@ -171,36 +176,87 @@ a:hover { color: var(--c-point); }
   height: var(--header-h);
   display: flex;
   align-items: center;
-  /* 초기 상태는 완전 투명. 유리 표현은 2단계에서 얹는다. */
+  /* 초기 상태는 완전 투명. 유리는 스크롤 타임라인이 보간해 올린다. */
   background: transparent;
-  /* 독립 합성 레이어로 격리 — 2·3단계의 backdrop-filter 와
-     스크롤 구동 애니메이션이 메인 스레드 리페인트 없이 돌아가게 한다 */
-  transform: translateZ(0);
-  transition: background-color 0.4s ease, border-color 0.4s ease;
   border-bottom: 1px solid transparent;
+  /* 독립 합성 레이어로 격리 */
+  transform: translateZ(0);
+
+  /* 스크롤 0~100px 구간에 유리 표현을 동기화한다. JS 개입 없음. */
+  animation: glass-fade linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 0 var(--glass-range);
 }
 
-.header.is-scrolled {
-  background: rgba(17, 17, 17, 0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  /* Safari 는 접두사 없이는 백드롭 블러를 적용하지 않는다 */
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  /* 유리 모서리의 빛 맺힘 */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* 유리 표면의 미세한 입자.
-   backdrop-filter 에 노이즈를 섞으면 블러 자체가 오염되므로,
-   별도 레이어로 덮어 블렌딩만 시킨다. */
-.header.is-scrolled::before {
+/* 유리 표면의 미세한 입자. backdrop-filter 에 직접 섞으면 블러가
+   오염되므로 별도 레이어로 덮는다. 유리와 같은 구간에서 같이 올라온다. */
+.header::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   filter: url(#glass-noise);
   /* overlay/soft-light 는 베이스가 검정에 가까우면 거의 상쇄된다.
-     실측상 이 어두운 유리 위에서 디더링 강도가 절반 이하라, 그대로 얹는다.
+     실측상 디더링 강도가 절반 이하라 블렌드 없이 그대로 얹는다.
      (overlay 0.49 / soft-light 0.41 / 그대로 얹기 1.11) */
+  opacity: 0;
+  animation: glass-noise-fade linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 0 var(--glass-range);
+}
+
+/* filter 목록은 함수 개수와 순서가 같아야 보간된다.
+   blur(0) 만 두면 blur+saturate 로 넘어갈 때 보간 없이 튄다. */
+@keyframes glass-fade {
+  from {
+    background-color: rgba(35, 35, 35, 0);
+    backdrop-filter: blur(0px) saturate(100%);
+    -webkit-backdrop-filter: blur(0px) saturate(100%);
+    border-bottom-color: rgba(255, 255, 255, 0);
+  }
+  to {
+    background-color: var(--c-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom-color: var(--c-glass-line);
+  }
+}
+
+@keyframes glass-noise-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 스크롤 타임라인 미지원(현재 Safari·Firefox) — JS 의 .is-scrolled 로 이원화.
+   두 경로가 동시에 걸리지 않도록 애니메이션을 무효화한다. */
+@supports not (animation-timeline: scroll()) {
+  .header,
+  .header::before {
+    animation: none;
+  }
+
+  .header {
+    transition: background-color 0.3s ease,
+                backdrop-filter 0.3s ease,
+                -webkit-backdrop-filter 0.3s ease,
+                border-bottom-color 0.3s ease;
+  }
+
+  .header::before {
+    transition: opacity 0.3s ease;
+  }
+
+  .header.is-scrolled {
+    background-color: var(--c-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    /* Safari 는 접두사 없이는 백드롭 블러를 적용하지 않는다 */
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom-color: var(--c-glass-line);
+  }
+
+  .header.is-scrolled::before {
+    opacity: 1;
+  }
 }
 
 /* 로고·내비를 노이즈 레이어 위로 올린다.
