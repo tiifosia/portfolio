@@ -363,6 +363,7 @@ a:hover { color: var(--c-point); }
    히어로
    ========================================================================== */
 .hero {
+  position: relative;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -389,10 +390,11 @@ a:hover { color: var(--c-point); }
    승격돼 스태킹 컨텍스트 안에 그려지지 않는 경우가 있어, 합성 대상을
    확실히 고정해 두려는 것이다. 배경색이 페이지와 같으므로 사각형은 보이지 않는다. */
 .signature {
-  width: clamp(200px, 22vw, 280px);
-  margin-top: clamp(20px, 4.5vh, 44px);
-  margin-left: auto;
-  margin-right: clamp(0px, 4vw, 64px);
+  /* 흐름에서 빼 둔다 — 히어로의 세로 중앙 정렬이 타이틀 하나만 보도록 */
+  position: absolute;
+  right: clamp(0px, 4vw, 64px);
+  bottom: clamp(24px, 7vh, 88px);
+  width: clamp(240px, 26vw, 336px);
   background-color: var(--c-bg);
   isolation: isolate;
   line-height: 0;
