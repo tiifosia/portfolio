@@ -57,6 +57,9 @@
   --fw-heavy:   800;  /* 메인 타이틀 */
 
   /* 레이아웃 */
+  --z-header: 9999;   /* 모든 스크롤 콘텐츠 위 */
+  --z-modal:  10000;  /* 헤더까지 덮는 최상단 */
+
   --fs-title: clamp(30px, 4.4vw, 56px);  /* Archive · Jeong Heesung 공용 */
 
   --header-h: 72px;
@@ -101,6 +104,16 @@ a:hover { color: var(--c-point); }
 /* 스크롤 진입 전 상태. GSAP 이 인라인 스타일로 덮어쓰며,
    GSAP 미로드나 모션 최소화 설정에서는 JS 가 속성을 제거해 즉시 노출한다. */
 [data-reveal] { opacity: 0; }
+
+/* 필터 정의만 담는 SVG.
+   display:none 으로 숨기면 크로미움에서 filter 참조가 해석되지 않으므로(실측 확인),
+   렌더 트리에 남겨둔 채 크기를 0 으로 만든다. */
+.svg-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
 
 ::selection { background: var(--c-point); color: var(--c-bg); }
 
@@ -151,11 +164,18 @@ a:hover { color: var(--c-point); }
    ========================================================================== */
 .header {
   position: fixed;
-  inset: 0 0 auto 0;
-  z-index: 100;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: var(--z-header);
   height: var(--header-h);
   display: flex;
   align-items: center;
+  /* 초기 상태는 완전 투명. 유리 표현은 2단계에서 얹는다. */
+  background: transparent;
+  /* 독립 합성 레이어로 격리 — 2·3단계의 backdrop-filter 와
+     스크롤 구동 애니메이션이 메인 스레드 리페인트 없이 돌아가게 한다 */
+  transform: translateZ(0);
   transition: background-color 0.4s ease, border-color 0.4s ease;
   border-bottom: 1px solid transparent;
 }
@@ -375,7 +395,7 @@ a:hover { color: var(--c-point); }
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
