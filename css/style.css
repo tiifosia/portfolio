@@ -73,7 +73,7 @@
   --header-top: 24px;   /* 화면 상단에서 띄우는 거리 */
   --header-w: 800px;    /* 플로팅 바 최대 너비 */
   --header-r: 40px;     /* 캡슐 라운드 (높이의 절반으로 클램프됨) */
-  --header-rim:  2px;   /* 굴절이 발현되는 곡면 두께 */
+  --header-rim:  1px;   /* 굴절이 발현되는 곡면 두께 — 선보다 넓으면 그쪽이 두께를 결정한다 */
   --header-line: 1px;   /* 빛이 맺히는 선 두께 — 이 값을 넘기면 면처럼 둔해진다 */
   --gutter: clamp(24px, 5vw, 80px);
   --max-w: 1440px;
@@ -239,12 +239,14 @@ a:hover { color: var(--c-point); }
   pointer-events: none;
   /* 면이 아니라 선이어야 한다. 1px 을 넘기는 순간 둔탁해진다. */
   padding: var(--header-line);
-  /* 위쪽은 흰 빛, 아래로 내려오며 포인트 컬러가 감돈다 */
+  /* 위쪽은 흰 빛, 아래로 내려오며 포인트 컬러가 감돈다.
+     1px 은 CSS 렌더 최소 폭이라 더 얇아질 수 없다 — 여기서부터는
+     밝기가 두께감을 좌우하므로 알파를 눅인다. */
   background: linear-gradient(160deg,
-              rgba(255, 255, 255, 0.5)  0%,
-              rgba(255, 255, 255, 0.08) 34%,
-              rgba(195, 189, 255, 0.6)  66%,
-              rgba(255, 255, 255, 0.1)  100%);
+              rgba(255, 255, 255, 0.3)  0%,
+              rgba(255, 255, 255, 0.05) 34%,
+              rgba(195, 189, 255, 0.38) 66%,
+              rgba(255, 255, 255, 0.07) 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box,
                 linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
