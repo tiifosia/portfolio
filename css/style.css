@@ -363,12 +363,17 @@ a:hover { color: var(--c-point); }
    히어로
    ========================================================================== */
 .hero {
+  /* 서명이 들어오면서 무게가 아래로 쏠려, 타이틀과 서명을 같이 끌어올린다.
+     아래 패딩을 2배로 주면 세로 중앙이 그 절반만큼 위로 올라간다. */
+  --hero-lift: clamp(0px, 5.5vh, 50px);
+  /* 서명만 추가로 왼쪽으로. 좁은 화면에서는 같이 줄어야 화면 밖으로 안 나간다. */
+  --sig-shift: clamp(0px, 9.7vw, 140px);
   position: relative;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-block: calc(var(--header-h) + 40px) 40px;
+  padding-block: calc(var(--header-h) + 40px) calc(40px + 2 * var(--hero-lift));
 }
 
 .hero__title {
@@ -392,8 +397,8 @@ a:hover { color: var(--c-point); }
 .signature {
   /* 흐름에서 빼 둔다 — 히어로의 세로 중앙 정렬이 타이틀 하나만 보도록 */
   position: absolute;
-  right: clamp(0px, 4vw, 64px);
-  bottom: clamp(24px, 7vh, 88px);
+  right: calc(clamp(0px, 4vw, 64px) + var(--sig-shift));
+  bottom: calc(clamp(24px, 7vh, 88px) + var(--hero-lift));
   width: clamp(240px, 26vw, 336px);
   background-color: var(--c-bg);
   isolation: isolate;
@@ -410,6 +415,13 @@ a:hover { color: var(--c-point); }
   height: auto;
   margin: -1px;
   mix-blend-mode: screen;
+}
+
+/* 가로로 누운 좁은 화면에서는 세로 여유가 없어 서명이 타이틀에 닿는다.
+   끌어올림을 끄고 서명을 줄여 비킨다. */
+@media (max-height: 560px) {
+  .hero { --hero-lift: 0px; }
+  .signature { width: clamp(132px, 17vw, 184px); }
 }
 
 /* 이름 — 타이포는 .section__title 과 공유해 Archive 와 항상 같게 유지한다.
