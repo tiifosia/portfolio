@@ -63,8 +63,15 @@
   --c-glass:      rgba(35, 35, 35, 0.65);
   --c-glass-line: rgba(255, 255, 255, 0.08);
   --glass-range:  100px;
-  /* 20px 은 배경 구조가 뭉개져 투과 형태가 납작해진다 */
-  --glass-filter: blur(16px) saturate(180%);
+  /* 블러가 셀수록 배경 구조가 뭉개져 투과 형태가 납작해진다 */
+  --glass-filter: blur(10px) saturate(180%);
+  /* 음수 spread 로 좌우 번짐만 차단한다. 블러를 그대로 두면 세로 오프셋이
+     있어도 좌우 안쪽 모서리까지 번져 풀 위드 헤더 양끝에 세로선이 생긴다
+     (실측 끝 편차 12.9 -> 0.8). 하단 굴절 글로우는 ::before 그라데이션이
+     맡는다 — 그라데이션은 가로로 번지지 않는다. */
+  --glass-shadow: inset 0 -2px 4px -4px rgba(255, 255, 255, 0.05),
+                  inset 0 -1px 1px -1px rgba(255, 255, 255, 0.15),
+                  0 12px 32px rgba(0, 0, 0, 0.4);
 
   --z-header: 9999;   /* 모든 스크롤 콘텐츠 위 */
   --z-modal:  10000;  /* 헤더까지 덮는 최상단 */
@@ -180,12 +187,9 @@ a:hover { color: var(--c-point); }
   height: var(--header-h);
   display: flex;
   align-items: center;
-  /* 초기 상태는 완전 투명. 유리는 스크롤 타임라인이 보간해 올린다. */
+  /* 초기 상태는 완전 투명. 유리는 스크롤 타임라인이 보간해 올린다.
+     테두리는 두지 않는다 — 하단 빛 맺힘은 ::after 의 마스크 베벨이 담당한다. */
   background: transparent;
-  /* 풀 위드 유리는 좌우가 화면 끝까지 뻗어야 하므로 하단 선만 둔다.
-     상단 굴곡감은 inset 하이라이트와 ::before 반사광이 담당한다.
-     항상 자리를 차지시켜 색만 보간한다 (스크롤 시 레이아웃 튐 방지) */
-  border-bottom: 1px solid transparent;
   /* 독립 합성 레이어로 격리 */
   transform: translateZ(0);
 
@@ -195,35 +199,49 @@ a:hover { color: var(--c-point); }
   animation-range: 0 var(--glass-range);
 }
 
-/* 표면 반사광 — 화면 위에서 빛이 떨어지며 생기는 유리면의 굴곡 */
+/* 표면 반사광 + 유리 입자.
+   가상 요소는 둘뿐인데 반사광·입자·베벨 셋이 필요하므로,
+   노이즈 필터를 반사광 그라데이션 위에 함께 합성해 한 레이어로 묶는다.
+   (필터가 grain 을 SourceGraphic 위에 얹으므로 그라데이션이 보존된다) */
 .header::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   border-radius: inherit;
+  /* 위: 빛 맺힘 / 아래: 유리 두께를 통과한 굴절 글로우 */
   background: linear-gradient(180deg,
               rgba(255, 255, 255, 0.12) 0%,
-              rgba(255, 255, 255, 0) 100%);
+              rgba(255, 255, 255, 0) 45%,
+              rgba(255, 255, 255, 0.055) 100%);
+  filter: url(#glass-noise);
   opacity: 0;
   animation: glass-layer-fade linear both;
   animation-timeline: scroll(root block);
   animation-range: 0 var(--glass-range);
 }
 
-/* 유리 표면의 미세한 입자. backdrop-filter 에 직접 섞으면 블러가
-   오염되므로 별도 레이어로 덮는다.
-   반사광(::before) 위에 와야 그라데이션의 계조 띠까지 함께 디더링된다. */
+/* 하단 베벨 — 1px 선 대신 마스크로 깎아낸 그라데이션 테두리.
+   content-box 를 도려내 padding 영역(하단 2px)만 남긴다. */
 .header::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border-radius: inherit;
-  filter: url(#glass-noise);
-  /* overlay/soft-light 는 베이스가 검정에 가까우면 거의 상쇄된다.
-     실측상 디더링 강도가 절반 이하라 블렌드 없이 그대로 얹는다.
-     (overlay 0.49 / soft-light 0.41 / 그대로 얹기 1.11) */
+  padding-bottom: 2px;
+  /* 양끝에서 빛이 사라지고 중앙에서 맺히며 포인트 컬러가 섞인다 */
+  background: linear-gradient(90deg,
+              rgba(255, 255, 255, 0)   0%,
+              rgba(255, 255, 255, 0.3) 15%,
+              rgba(195, 189, 255, 0.6) 50%,
+              rgba(255, 255, 255, 0.3) 85%,
+              rgba(255, 255, 255, 0)   100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
+          mask-composite: exclude;
   opacity: 0;
   animation: glass-layer-fade linear both;
   animation-timeline: scroll(root block);
@@ -237,22 +255,16 @@ a:hover { color: var(--c-point); }
     background-color: rgba(35, 35, 35, 0);
     backdrop-filter: blur(0px) saturate(100%);
     -webkit-backdrop-filter: blur(0px) saturate(100%);
-    border-bottom-color: rgba(255, 255, 255, 0);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0),
-                inset 0 -1px 0 rgba(255, 255, 255, 0),
-                0 8px 32px rgba(0, 0, 0, 0);
+    box-shadow: inset 0 -2px 4px -4px rgba(255, 255, 255, 0),
+                inset 0 -1px 1px -1px rgba(255, 255, 255, 0),
+                0 12px 32px rgba(0, 0, 0, 0);
   }
   to {
     background-color: var(--c-glass);
     backdrop-filter: var(--glass-filter);
     -webkit-backdrop-filter: var(--glass-filter);
-    border-bottom-color: var(--c-glass-line);
-    /* 상단 빛 맺힘 / 하단 모서리 반사 / 떠 있는 뎁스 그림자.
-       블러는 0 이다. 1px 블러는 좌우 안쪽 모서리까지 번져 풀 위드
-       헤더의 화면 끝에 세로선을 만든다 (실측 편차 9.2 -> 0.2). */
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-                0 8px 32px rgba(0, 0, 0, 0.3);
+    /* 하단 모서리의 두꺼운 굴절 / 끝단의 날카로운 하이라이트 / 부유감 */
+    box-shadow: var(--glass-shadow);
   }
 }
 
@@ -274,7 +286,6 @@ a:hover { color: var(--c-point); }
     transition: background-color 0.3s ease,
                 backdrop-filter 0.3s ease,
                 -webkit-backdrop-filter 0.3s ease,
-                border-bottom-color 0.3s ease,
                 box-shadow 0.3s ease;
   }
 
@@ -288,10 +299,7 @@ a:hover { color: var(--c-point); }
     backdrop-filter: var(--glass-filter);
     /* Safari 는 접두사 없이는 백드롭 블러를 적용하지 않는다 */
     -webkit-backdrop-filter: var(--glass-filter);
-    border-bottom-color: var(--c-glass-line);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-                0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--glass-shadow);
   }
 
   .header.is-scrolled::before,
