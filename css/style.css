@@ -63,15 +63,6 @@
   --c-glass:      rgba(35, 35, 35, 0.65);
   --c-glass-line: rgba(255, 255, 255, 0.08);
   --glass-range:  100px;
-  /* 블러가 셀수록 배경 구조가 뭉개져 투과 형태가 납작해진다 */
-  --glass-filter: blur(10px) saturate(180%);
-  /* 음수 spread 로 좌우 번짐만 차단한다. 블러를 그대로 두면 세로 오프셋이
-     있어도 좌우 안쪽 모서리까지 번져 풀 위드 헤더 양끝에 세로선이 생긴다
-     (실측 끝 편차 12.9 -> 0.8). 하단 굴절 글로우는 ::before 그라데이션이
-     맡는다 — 그라데이션은 가로로 번지지 않는다. */
-  --glass-shadow: inset 0 -2px 4px -4px rgba(255, 255, 255, 0.05),
-                  inset 0 -1px 1px -1px rgba(255, 255, 255, 0.15),
-                  0 12px 32px rgba(0, 0, 0, 0.4);
 
   --z-header: 9999;   /* 모든 스크롤 콘텐츠 위 */
   --z-modal:  10000;  /* 헤더까지 덮는 최상단 */
@@ -187,42 +178,42 @@ a:hover { color: var(--c-point); }
   height: var(--header-h);
   display: flex;
   align-items: center;
-  /* 초기 상태는 완전 투명. 유리는 스크롤 타임라인이 보간해 올린다.
-     테두리는 두지 않는다 — 하단 빛 맺힘은 ::after 의 마스크 베벨이 담당한다. */
+  /* 초기 상태는 완전 투명. 유리는 스크롤 타임라인이 보간해 올린다. */
   background: transparent;
-  /* 독립 합성 레이어로 격리 */
+  /* 독립 합성 레이어로 격리.
+     주의: 여기에 opacity 나 will-change: backdrop-filter 를 걸면
+     자손(::before)의 backdrop-filter 가 통째로 무효화된다 (실측 확인). */
   transform: translateZ(0);
 
-  /* 스크롤 0~100px 구간에 유리 표현을 동기화한다. JS 개입 없음. */
   animation: glass-fade linear both;
   animation-timeline: scroll(root block);
   animation-range: 0 var(--glass-range);
 }
 
-/* 표면 반사광 + 유리 입자.
-   가상 요소는 둘뿐인데 반사광·입자·베벨 셋이 필요하므로,
-   노이즈 필터를 반사광 그라데이션 위에 함께 합성해 한 레이어로 묶는다.
-   (필터가 grain 을 SourceGraphic 위에 얹으므로 그라데이션이 보존된다) */
+/* 광학 레이어 — 굴절·산란·입자·반사광을 SVG 필터 하나로 처리한다.
+   backdrop-filter 와 opacity 를 같은 요소에 둬야 굴절 강도가 비례해서
+   올라온다 (opacity 0.5 에서 휨이 정확히 절반으로 측정됨). */
 .header::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border-radius: inherit;
-  /* 위: 빛 맺힘 / 아래: 유리 두께를 통과한 굴절 글로우 */
-  background: linear-gradient(180deg,
-              rgba(255, 255, 255, 0.12) 0%,
-              rgba(255, 255, 255, 0) 45%,
-              rgba(255, 255, 255, 0.055) 100%);
-  filter: url(#glass-noise);
+  /* url() 필터를 백드롭에 못 쓰는 브라우저용 폴백.
+     아래 선언 파싱에 실패하면 이 값이 유지돼 최소한 블러는 남는다. */
+  backdrop-filter: blur(10px) saturate(180%);
+  -webkit-backdrop-filter: blur(10px) saturate(180%);
+  backdrop-filter: url(#glass-3d);
+  -webkit-backdrop-filter: url(#glass-3d);
+  will-change: backdrop-filter, transform;
+  transform: translateZ(0);
   opacity: 0;
   animation: glass-layer-fade linear both;
   animation-timeline: scroll(root block);
   animation-range: 0 var(--glass-range);
 }
 
-/* 하단 베벨 — 1px 선 대신 마스크로 깎아낸 그라데이션 테두리.
-   content-box 를 도려내 padding 영역(하단 2px)만 남긴다. */
+/* 하단 베벨 — 마스크로 깎아낸 그라데이션 테두리.
+   content-box 를 도려내 하단 2px 만 남긴다. */
 .header::after {
   content: '';
   position: absolute;
@@ -248,23 +239,15 @@ a:hover { color: var(--c-point); }
   animation-range: 0 var(--glass-range);
 }
 
-/* filter 와 box-shadow 는 목록의 개수·순서·inset 여부가 같아야 보간된다.
-   한쪽만 짧으면 보간 없이 불연속으로 튄다. */
 @keyframes glass-fade {
   from {
     background-color: rgba(35, 35, 35, 0);
-    backdrop-filter: blur(0px) saturate(100%);
-    -webkit-backdrop-filter: blur(0px) saturate(100%);
-    box-shadow: inset 0 -2px 4px -4px rgba(255, 255, 255, 0),
-                inset 0 -1px 1px -1px rgba(255, 255, 255, 0),
-                0 12px 32px rgba(0, 0, 0, 0);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0);
   }
   to {
     background-color: var(--c-glass);
-    backdrop-filter: var(--glass-filter);
-    -webkit-backdrop-filter: var(--glass-filter);
-    /* 하단 모서리의 두꺼운 굴절 / 끝단의 날카로운 하이라이트 / 부유감 */
-    box-shadow: var(--glass-shadow);
+    /* 유리가 떠 있는 뎁스. 엣지 반사광은 SVG feSpecularLighting 이 담당한다. */
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -273,8 +256,7 @@ a:hover { color: var(--c-point); }
   to   { opacity: 1; }
 }
 
-/* 스크롤 타임라인 미지원(현재 Safari·Firefox) — JS 의 .is-scrolled 로 이원화.
-   두 경로가 동시에 걸리지 않도록 애니메이션을 무효화한다. */
+/* 스크롤 타임라인 미지원(현재 Safari·Firefox) — JS 의 .is-scrolled 로 이원화. */
 @supports not (animation-timeline: scroll()) {
   .header,
   .header::before,
@@ -283,10 +265,7 @@ a:hover { color: var(--c-point); }
   }
 
   .header {
-    transition: background-color 0.3s ease,
-                backdrop-filter 0.3s ease,
-                -webkit-backdrop-filter 0.3s ease,
-                box-shadow 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
   }
 
   .header::before,
@@ -296,10 +275,7 @@ a:hover { color: var(--c-point); }
 
   .header.is-scrolled {
     background-color: var(--c-glass);
-    backdrop-filter: var(--glass-filter);
-    /* Safari 는 접두사 없이는 백드롭 블러를 적용하지 않는다 */
-    -webkit-backdrop-filter: var(--glass-filter);
-    box-shadow: var(--glass-shadow);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   }
 
   .header.is-scrolled::before,
