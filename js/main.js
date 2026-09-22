@@ -158,3 +158,53 @@
       });
   });
 })();
+
+/* --------------------------------------------------------------------------
+   서명 영상 — 한 번 쓰이고 나면 마지막 프레임 그대로 굳는다
+   -------------------------------------------------------------------------- */
+(function () {
+  'use strict';
+
+  var video = document.querySelector('.signature__video');
+  if (!video) return;
+
+  var frozen = false;
+
+  /* 끝에서 아주 살짝 앞을 잡는다. 정확히 duration 으로 옮기면
+     브라우저에 따라 빈 프레임이 잡힐 수 있다. */
+  function freeze() {
+    frozen = true;
+    if (!video.paused) video.pause();
+    var d = video.duration;
+    if (!isFinite(d) || d <= 0) return;
+    var last = Math.max(0, d - 0.01);
+    if (Math.abs(video.currentTime - last) > 0.01) video.currentTime = last;
+  }
+
+  video.addEventListener('ended', freeze);
+
+  /* 다 쓴 뒤에 되감기거나 다시 재생되려 하면 그때마다 도로 굳힌다.
+     (탭 복귀, bfcache 복원, 브라우저의 자동 되감기 방어) */
+  function keep() { if (frozen) freeze(); }
+  video.addEventListener('play', keep);
+  video.addEventListener('seeked', keep);
+  video.addEventListener('emptied', keep);
+  document.addEventListener('visibilitychange', keep);
+  window.addEventListener('pageshow', keep);
+
+  /* 모션을 줄이는 설정이면 쓰는 과정 없이 완성된 서명만 보여준다 */
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (video.readyState >= 1) freeze();
+    else video.addEventListener('loadedmetadata', freeze);
+    return;
+  }
+
+  /* 자동재생이 막히면 검은 화면이 남는다. 그때는 완성본으로 건너뛴다. */
+  var played = video.play();
+  if (played && played.catch) {
+    played.catch(function () {
+      if (video.readyState >= 1) freeze();
+      else video.addEventListener('loadedmetadata', freeze);
+    });
+  }
+})();
