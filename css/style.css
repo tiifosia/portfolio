@@ -60,7 +60,7 @@
 
   /* 레이아웃 */
   /* 유리 — 배경(#111111)보다 밝아야 평평한 구간에서도 판이 인지된다 */
-  --c-glass:      rgba(35, 35, 35, 0.65);
+  --c-glass:      rgba(17, 17, 17, 0.65);
   --c-glass-line: rgba(255, 255, 255, 0.08);
   --glass-range:  100px;
 
@@ -70,6 +70,10 @@
   --fs-title: clamp(30px, 4.4vw, 56px);  /* Archive · Jeong Heesung 공용 */
 
   --header-h: 72px;
+  --header-top: 24px;   /* 화면 상단에서 띄우는 거리 */
+  --header-w: 800px;    /* 플로팅 바 최대 너비 */
+  --header-r: 40px;     /* 캡슐 라운드 (높이의 절반으로 클램프됨) */
+  --header-rim: 3px;    /* 굴절이 발현되는 곡면 두께 */
   --gutter: clamp(24px, 5vw, 80px);
   --max-w: 1440px;
   --section-pad: clamp(96px, 14vh, 180px);
@@ -142,8 +146,8 @@ a:hover { color: var(--c-point); }
 .section {
   padding-block: var(--section-pad);
   border-top: 1px solid var(--c-line);
-  /* 고정 헤더에 가려지지 않도록 앵커 이동 위치를 보정 */
-  scroll-margin-top: var(--header-h);
+  /* 떠 있는 헤더에 가려지지 않도록 앵커 이동 위치를 보정 */
+  scroll-margin-top: calc(var(--header-top) + var(--header-h) + 16px);
 }
 
 /* 섹션 번호 라벨 — 보조 위계, 트래킹 넓게 */
@@ -171,15 +175,20 @@ a:hover { color: var(--c-point); }
    ========================================================================== */
 .header {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: var(--z-header);
+  top: var(--header-top);
+  inset-inline: 0;
+  margin-inline: auto;
+  width: min(var(--header-w), calc(100% - 2 * var(--gutter)));
   height: var(--header-h);
+  border-radius: var(--header-r);
+  z-index: var(--z-header);
   display: flex;
   align-items: center;
-  /* 초기 상태는 완전 투명. 유리는 스크롤 타임라인이 보간해 올린다. */
+
+  /* 중앙 평면부 — 굴절 없이 평평하게 뭉갠다. 글자가 선명해야 하므로
+     여기에는 feDisplacementMap 을 절대 쓰지 않는다. */
   background: transparent;
+
   /* 독립 합성 레이어로 격리.
      주의: 여기에 opacity 나 will-change: backdrop-filter 를 걸면
      자손(::before)의 backdrop-filter 가 통째로 무효화된다 (실측 확인). */
@@ -190,14 +199,16 @@ a:hover { color: var(--c-point); }
   animation-range: 0 var(--glass-range);
 }
 
-/* 광학 레이어 — 굴절·산란·입자·반사광을 SVG 필터 하나로 처리한다.
-   backdrop-filter 와 opacity 를 같은 요소에 둬야 굴절 강도가 비례해서
-   올라온다 (opacity 0.5 에서 휨이 정확히 절반으로 측정됨). */
+/* 엣지 굴절 레이어 — 빛이 꺾이는 곡면.
+   마스크로 중앙을 뚫어 테두리 링에만 SVG 굴절·반사광을 발현시킨다.
+   backdrop-filter 와 opacity 는 같은 요소에 둬야 굴절 강도가 비례한다. */
 .header::before {
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   pointer-events: none;
+  padding: var(--header-rim);
   /* url() 필터를 백드롭에 못 쓰는 브라우저용 폴백.
      아래 선언 파싱에 실패하면 이 값이 유지돼 최소한 블러는 남는다. */
   backdrop-filter: blur(10px) saturate(180%);
@@ -206,27 +217,6 @@ a:hover { color: var(--c-point); }
   -webkit-backdrop-filter: url(#glass-3d);
   will-change: backdrop-filter, transform;
   transform: translateZ(0);
-  opacity: 0;
-  animation: glass-layer-fade linear both;
-  animation-timeline: scroll(root block);
-  animation-range: 0 var(--glass-range);
-}
-
-/* 하단 베벨 — 마스크로 깎아낸 그라데이션 테두리.
-   content-box 를 도려내 하단 2px 만 남긴다. */
-.header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  padding-bottom: 2px;
-  /* 양끝에서 빛이 사라지고 중앙에서 맺히며 포인트 컬러가 섞인다 */
-  background: linear-gradient(90deg,
-              rgba(255, 255, 255, 0)   0%,
-              rgba(255, 255, 255, 0.3) 15%,
-              rgba(195, 189, 255, 0.6) 50%,
-              rgba(255, 255, 255, 0.3) 85%,
-              rgba(255, 255, 255, 0)   100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box,
                 linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -239,14 +229,48 @@ a:hover { color: var(--c-point); }
   animation-range: 0 var(--glass-range);
 }
 
+/* 엣지 빛 맺힘 — 같은 링에 포인트 컬러와 두께감을 겹친다. */
+.header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: var(--header-rim);
+  /* 위쪽은 흰 빛, 아래로 내려오며 포인트 컬러가 감돈다 */
+  background: linear-gradient(160deg,
+              rgba(255, 255, 255, 0.45) 0%,
+              rgba(255, 255, 255, 0.10) 32%,
+              rgba(195, 189, 255, 0.55) 68%,
+              rgba(255, 255, 255, 0.12) 100%);
+  /* 두께감은 가장자리에 집중시킨다 */
+  box-shadow: inset 0 0 6px -2px rgba(255, 255, 255, 0.5),
+              inset 0 0 2px 0 rgba(195, 189, 255, 0.35);
+  -webkit-mask: linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  opacity: 0;
+  animation: glass-layer-fade linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 0 var(--glass-range);
+}
+
+/* filter 목록은 함수 개수와 순서가 같아야 보간된다. */
 @keyframes glass-fade {
   from {
-    background-color: rgba(35, 35, 35, 0);
+    background-color: rgba(17, 17, 17, 0);
+    backdrop-filter: blur(0px) saturate(100%);
+    -webkit-backdrop-filter: blur(0px) saturate(100%);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0);
   }
   to {
     background-color: var(--c-glass);
-    /* 유리가 떠 있는 뎁스. 엣지 반사광은 SVG feSpecularLighting 이 담당한다. */
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    /* 화면에 떠 있는 뎁스 */
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   }
 }
@@ -265,7 +289,10 @@ a:hover { color: var(--c-point); }
   }
 
   .header {
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    transition: background-color 0.3s ease,
+                backdrop-filter 0.3s ease,
+                -webkit-backdrop-filter 0.3s ease,
+                box-shadow 0.3s ease;
   }
 
   .header::before,
@@ -275,6 +302,8 @@ a:hover { color: var(--c-point); }
 
   .header.is-scrolled {
     background-color: var(--c-glass);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   }
 
@@ -289,6 +318,9 @@ a:hover { color: var(--c-point); }
 .header__inner {
   position: relative;
   z-index: 1;
+  /* 캡슐 안쪽 여백. .container 의 큰 거터를 덮어쓴다. */
+  max-width: none;
+  padding-inline: 30px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -604,7 +636,12 @@ a:hover { color: var(--c-point); }
 }
 
 @media (max-width: 640px) {
-  :root { --header-h: 60px; }
+  :root {
+    --header-h: 60px;
+    --header-top: 14px;
+    --header-r: 30px;
+  }
+  .header__inner { padding-inline: 22px; }
   .works__grid { grid-template-columns: 1fr; }
   .nav { gap: 18px; }
   .nav__link { font-size: 12px; }
