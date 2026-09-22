@@ -45,6 +45,8 @@
   --c-text-sub:  #8D8D92;  /* 보조 텍스트 */
   --c-point:     #C3BDFF;  /* 포인트 — 커서/호버/얇은 선에만 */
   --c-point-dim: rgba(195, 189, 255, 0.35);
+  /* 모바일 메뉴 — 유리 뒤로 밝은 썸네일이 지날 때의 가독성 확보용 */
+  --c-nav-mobile: #B2B2B2;
   --c-line:      rgba(245, 245, 247, 0.10);
 
   /* 폰트 위계 */
@@ -570,6 +572,12 @@ a:hover { color: var(--c-point); }
    ========================================================================== */
 @media (max-width: 1024px) {
   .works__grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* 좁은 화면에서는 썸네일이 메뉴 뒤를 가로로 지나 유리 뒤 배경이 밝아진다.
+   메뉴만 한 단계 밝혀 대비를 확보한다. 데스크톱은 기존 밸런스를 그대로 둔다. */
+@media (max-width: 768px) {
+  .nav__link { color: var(--c-nav-mobile); }
 }
 
 @media (max-width: 640px) {
