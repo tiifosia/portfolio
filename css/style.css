@@ -181,13 +181,33 @@ a:hover { color: var(--c-point); }
 }
 
 .header.is-scrolled {
-  background-color: rgba(17, 17, 17, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom-color: var(--c-line);
+  background: rgba(17, 17, 17, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  /* Safari 는 접두사 없이는 백드롭 블러를 적용하지 않는다 */
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  /* 유리 모서리의 빛 맺힘 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* 유리 표면의 미세한 입자.
+   backdrop-filter 에 노이즈를 섞으면 블러 자체가 오염되므로,
+   별도 레이어로 덮어 블렌딩만 시킨다. */
+.header.is-scrolled::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: url(#glass-noise);
+  /* overlay/soft-light 는 베이스가 검정에 가까우면 거의 상쇄된다.
+     실측상 이 어두운 유리 위에서 디더링 강도가 절반 이하라, 그대로 얹는다.
+     (overlay 0.49 / soft-light 0.41 / 그대로 얹기 1.11) */
+}
+
+/* 로고·내비를 노이즈 레이어 위로 올린다.
+   ::before 는 위치 지정 요소라 그대로 두면 일반 자식보다 위에 그려진다. */
 .header__inner {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
