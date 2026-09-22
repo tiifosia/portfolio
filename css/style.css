@@ -67,8 +67,6 @@
   --z-header: 9999;   /* 모든 스크롤 콘텐츠 위 */
   --z-modal:  10000;  /* 헤더까지 덮는 최상단 */
 
-  --fs-title: clamp(30px, 4.4vw, 56px);  /* Archive · Jeong Heesung 공용 */
-
   --header-h: 72px;
   --header-top: 24px;   /* 화면 상단에서 띄우는 거리 */
   --header-w: 800px;    /* 플로팅 바 최대 너비 */
@@ -165,7 +163,7 @@ a:hover { color: var(--c-point); }
 /* 섹션 제목 */
 .section__title {
   max-width: 20ch;
-  font-size: var(--fs-title);
+  font-size: clamp(30px, 4.4vw, 56px);
   font-weight: var(--fw-bold);
   line-height: 1.28;
   letter-spacing: -0.03em;
@@ -377,14 +375,10 @@ a:hover { color: var(--c-point); }
   color: var(--c-text-sub);
 }
 
-/* 이름 — 이 섹션의 헤드라인. 가장 크고 가장 굵게 */
+/* 이름 — 타이포는 .section__title 과 공유해 Archive 와 항상 같게 유지한다.
+   여기서는 위치만 잡는다. */
 .about__name {
   margin-top: 4px;
-  color: var(--c-text);
-  font-size: var(--fs-title);
-  font-weight: var(--fw-heavy);
-  line-height: 1.1;
-  letter-spacing: -0.035em;
 }
 
 /* 역할 — 이름보다 작고 얇게, 포인트 컬러로 한 단계 아래 위계 */
