@@ -182,8 +182,10 @@ a:hover { color: var(--c-point); }
   align-items: center;
   /* 초기 상태는 완전 투명. 유리는 스크롤 타임라인이 보간해 올린다. */
   background: transparent;
-  /* 항상 자리를 차지시켜 색만 보간한다 (스크롤 시 레이아웃 튐 방지) */
-  border: 1px solid transparent;
+  /* 풀 위드 유리는 좌우가 화면 끝까지 뻗어야 하므로 하단 선만 둔다.
+     상단 굴곡감은 inset 하이라이트와 ::before 반사광이 담당한다.
+     항상 자리를 차지시켜 색만 보간한다 (스크롤 시 레이아웃 튐 방지) */
+  border-bottom: 1px solid transparent;
   /* 독립 합성 레이어로 격리 */
   transform: translateZ(0);
 
@@ -235,19 +237,21 @@ a:hover { color: var(--c-point); }
     background-color: rgba(35, 35, 35, 0);
     backdrop-filter: blur(0px) saturate(100%);
     -webkit-backdrop-filter: blur(0px) saturate(100%);
-    border-color: rgba(255, 255, 255, 0);
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0),
-                inset 0 -1px 1px rgba(255, 255, 255, 0),
+    border-bottom-color: rgba(255, 255, 255, 0);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0),
+                inset 0 -1px 0 rgba(255, 255, 255, 0),
                 0 8px 32px rgba(0, 0, 0, 0);
   }
   to {
     background-color: var(--c-glass);
     backdrop-filter: var(--glass-filter);
     -webkit-backdrop-filter: var(--glass-filter);
-    border-color: var(--c-glass-line);
-    /* 상단 빛 맺힘 / 하단 모서리 반사 / 떠 있는 뎁스 그림자 */
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15),
-                inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+    border-bottom-color: var(--c-glass-line);
+    /* 상단 빛 맺힘 / 하단 모서리 반사 / 떠 있는 뎁스 그림자.
+       블러는 0 이다. 1px 블러는 좌우 안쪽 모서리까지 번져 풀 위드
+       헤더의 화면 끝에 세로선을 만든다 (실측 편차 9.2 -> 0.2). */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.05),
                 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 }
@@ -270,7 +274,7 @@ a:hover { color: var(--c-point); }
     transition: background-color 0.3s ease,
                 backdrop-filter 0.3s ease,
                 -webkit-backdrop-filter 0.3s ease,
-                border-color 0.3s ease,
+                border-bottom-color 0.3s ease,
                 box-shadow 0.3s ease;
   }
 
@@ -284,9 +288,9 @@ a:hover { color: var(--c-point); }
     backdrop-filter: var(--glass-filter);
     /* Safari 는 접두사 없이는 백드롭 블러를 적용하지 않는다 */
     -webkit-backdrop-filter: var(--glass-filter);
-    border-color: var(--c-glass-line);
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15),
-                inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+    border-bottom-color: var(--c-glass-line);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.05),
                 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
