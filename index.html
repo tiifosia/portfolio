@@ -52,6 +52,9 @@
   </svg>
 
   <header class="header" id="header">
+    <!-- 본체: 스퀘어클 마스크가 걸리는 면. 래퍼(.header)에는 마스크를 걸지 않는다 —
+         부모에 마스크가 있으면 자손의 backdrop-filter 가 통째로 죽는다(실측). -->
+    <div class="header__glass"></div>
     <div class="container header__inner">
       <a class="header__logo" href="#top">PORTFOLIO</a>
       <nav class="nav">

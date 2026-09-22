@@ -71,8 +71,15 @@
   --header-top: 24px;   /* 화면 상단에서 띄우는 거리 */
   --header-w: 800px;    /* 플로팅 바 최대 너비 */
   --header-r: 40px;     /* 캡슐 라운드 (높이의 절반으로 클램프됨) */
-  --header-rim:  1px;   /* 굴절이 발현되는 곡면 두께 — 선보다 넓으면 그쪽이 두께를 결정한다 */
-  --header-line: 1px;   /* 빛이 맺히는 선 두께 — 이 값을 넘기면 면처럼 둔해진다 */
+  /* 스퀘어클(연속 곡률) 마스크 — 캡 SVG 는 72x72 정사각 스퀘어클을 좌/우 절반씩
+     viewBox 로 잘라 쓴다. 캡을 항상 '높이의 절반' 크기로 깔면 viewBox 비율(1:2)과
+     mask-size 비율이 같아 균일 확대만 일어난다 = 어떤 폭에서도 곡률이 안 찌그러진다.
+     링 두께 1px 은 안쪽 패스를 1px 안으로 들여 evenodd 로 뚫어 만들었다. */
+  --sq-cap: calc(var(--header-h) / 2);
+  --sq-fill-l: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 72'><path d='M36 0c12.6012 0 18.9018 0 23.7148 2.4524a22.5 22.5 0 0 1 9.8329 9.8329c2.4524 4.813 2.4524 11.1136 2.4524 23.7148L72 36c0 12.6012 0 18.9018 -2.4524 23.7148a22.5 22.5 0 0 1 -9.8329 9.8329c-4.813 2.4524 -11.1136 2.4524 -23.7148 2.4524L36 72c-12.6012 0 -18.9018 0 -23.7148 -2.4524a22.5 22.5 0 0 1 -9.8329 -9.8329c-2.4524 -4.813 -2.4524 -11.1136 -2.4524 -23.7148L0 36c0 -12.6012 0 -18.9018 2.4524 -23.7148a22.5 22.5 0 0 1 9.8329 -9.8329c4.813 -2.4524 11.1136 -2.4524 23.7148 -2.4524Z' fill='black'/></svg>");
+  --sq-fill-r: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='36 0 36 72'><path d='M36 0c12.6012 0 18.9018 0 23.7148 2.4524a22.5 22.5 0 0 1 9.8329 9.8329c2.4524 4.813 2.4524 11.1136 2.4524 23.7148L72 36c0 12.6012 0 18.9018 -2.4524 23.7148a22.5 22.5 0 0 1 -9.8329 9.8329c-4.813 2.4524 -11.1136 2.4524 -23.7148 2.4524L36 72c-12.6012 0 -18.9018 0 -23.7148 -2.4524a22.5 22.5 0 0 1 -9.8329 -9.8329c-2.4524 -4.813 -2.4524 -11.1136 -2.4524 -23.7148L0 36c0 -12.6012 0 -18.9018 2.4524 -23.7148a22.5 22.5 0 0 1 9.8329 -9.8329c4.813 -2.4524 11.1136 -2.4524 23.7148 -2.4524Z' fill='black'/></svg>");
+  --sq-ring-l: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 72'><path d='M36 0c12.6012 0 18.9018 0 23.7148 2.4524a22.5 22.5 0 0 1 9.8329 9.8329c2.4524 4.813 2.4524 11.1136 2.4524 23.7148L72 36c0 12.6012 0 18.9018 -2.4524 23.7148a22.5 22.5 0 0 1 -9.8329 9.8329c-4.813 2.4524 -11.1136 2.4524 -23.7148 2.4524L36 72c-12.6012 0 -18.9018 0 -23.7148 -2.4524a22.5 22.5 0 0 1 -9.8329 -9.8329c-2.4524 -4.813 -2.4524 -11.1136 -2.4524 -23.7148L0 36c0 -12.6012 0 -18.9018 2.4524 -23.7148a22.5 22.5 0 0 1 9.8329 -9.8329c4.813 -2.4524 11.1136 -2.4524 23.7148 -2.4524ZM36.6 1c12.0411 0 18.0617 0 22.6608 2.3434a21.5 21.5 0 0 1 9.3958 9.3958c2.3434 4.5991 2.3434 10.6197 2.3434 22.6608L71 36.6c0 12.0411 0 18.0617 -2.3434 22.6608a21.5 21.5 0 0 1 -9.3958 9.3958c-4.5991 2.3434 -10.6197 2.3434 -22.6608 2.3434L35.4 71c-12.0411 0 -18.0617 0 -22.6608 -2.3434a21.5 21.5 0 0 1 -9.3958 -9.3958c-2.3434 -4.5991 -2.3434 -10.6197 -2.3434 -22.6608L1 35.4c0 -12.0411 0 -18.0617 2.3434 -22.6608a21.5 21.5 0 0 1 9.3958 -9.3958c4.5991 -2.3434 10.6197 -2.3434 22.6608 -2.3434Z' fill='black' fill-rule='evenodd'/></svg>");
+  --sq-ring-r: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='36 0 36 72'><path d='M36 0c12.6012 0 18.9018 0 23.7148 2.4524a22.5 22.5 0 0 1 9.8329 9.8329c2.4524 4.813 2.4524 11.1136 2.4524 23.7148L72 36c0 12.6012 0 18.9018 -2.4524 23.7148a22.5 22.5 0 0 1 -9.8329 9.8329c-4.813 2.4524 -11.1136 2.4524 -23.7148 2.4524L36 72c-12.6012 0 -18.9018 0 -23.7148 -2.4524a22.5 22.5 0 0 1 -9.8329 -9.8329c-2.4524 -4.813 -2.4524 -11.1136 -2.4524 -23.7148L0 36c0 -12.6012 0 -18.9018 2.4524 -23.7148a22.5 22.5 0 0 1 9.8329 -9.8329c4.813 -2.4524 11.1136 -2.4524 23.7148 -2.4524ZM36.6 1c12.0411 0 18.0617 0 22.6608 2.3434a21.5 21.5 0 0 1 9.3958 9.3958c2.3434 4.5991 2.3434 10.6197 2.3434 22.6608L71 36.6c0 12.0411 0 18.0617 -2.3434 22.6608a21.5 21.5 0 0 1 -9.3958 9.3958c-4.5991 2.3434 -10.6197 2.3434 -22.6608 2.3434L35.4 71c-12.0411 0 -18.0617 0 -22.6608 -2.3434a21.5 21.5 0 0 1 -9.3958 -9.3958c-2.3434 -4.5991 -2.3434 -10.6197 -2.3434 -22.6608L1 35.4c0 -12.0411 0 -18.0617 2.3434 -22.6608a21.5 21.5 0 0 1 9.3958 -9.3958c4.5991 -2.3434 10.6197 -2.3434 22.6608 -2.3434Z' fill='black' fill-rule='evenodd'/></svg>");
   --gutter: clamp(24px, 5vw, 80px);
   --max-w: 1440px;
   --section-pad: clamp(96px, 14vh, 180px);
@@ -184,15 +191,38 @@ a:hover { color: var(--c-point); }
   display: flex;
   align-items: center;
 
-  /* 중앙 평면부 — 굴절 없이 평평하게 뭉갠다. 글자가 선명해야 하므로
-     여기에는 feDisplacementMap 을 절대 쓰지 않는다. */
+  /* 래퍼는 '떠 있는 깊이감'만 맡는다. 여기에 마스크나 filter 를 걸면
+     바깥 그림자가 잘리고, 자손의 backdrop-filter 까지 죽는다 (실측 확인).
+     opacity / will-change: backdrop-filter 도 같은 이유로 금지. */
   background: transparent;
-
-  /* 독립 합성 레이어로 격리.
-     주의: 여기에 opacity 나 will-change: backdrop-filter 를 걸면
-     자손(::before)의 backdrop-filter 가 통째로 무효화된다 (실측 확인). */
   transform: translateZ(0);
 
+  animation: glass-shadow linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 0 var(--glass-range);
+}
+
+/* 본체 — 스퀘어클로 잘리는 유리 면. 블러·틴트·안쪽 두께감을 담당한다.
+   마스크는 자기 자신에게만 건다(부모에 걸면 형제 레이어의 굴절이 죽는다). */
+.header__glass {
+  position: absolute;
+  inset: 0;
+  /* border-radius 를 주면 안 된다. 박스가 먼저 캡슐로 잘린 뒤 마스크가 적용돼
+     스퀘어클이 캡슐 바깥으로 부푸는 45도 구간이 통째로 깎인다 (실측 확인).
+     외곽 형태는 오직 마스크가 정한다. */
+  pointer-events: none;
+  -webkit-mask-image: var(--sq-fill-l), var(--sq-fill-r), linear-gradient(#000 0 0);
+          mask-image: var(--sq-fill-l), var(--sq-fill-r), linear-gradient(#000 0 0);
+  -webkit-mask-position: left center, right center, center;
+          mask-position: left center, right center, center;
+  -webkit-mask-size: var(--sq-cap) 100%, var(--sq-cap) 100%,
+                     calc(100% - 2 * var(--sq-cap)) 100%;
+          mask-size: var(--sq-cap) 100%, var(--sq-cap) 100%,
+                     calc(100% - 2 * var(--sq-cap)) 100%;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-composite: source-over;
+          mask-composite: add;
   animation: glass-fade linear both;
   animation-timeline: scroll(root block);
   animation-range: 0 var(--glass-range);
@@ -205,9 +235,7 @@ a:hover { color: var(--c-point); }
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: inherit;
   pointer-events: none;
-  padding: var(--header-rim);
   /* url() 필터를 백드롭에 못 쓰는 브라우저용 폴백.
      아래 선언 파싱에 실패하면 이 값이 유지돼 최소한 블러는 남는다. */
   backdrop-filter: blur(10px) saturate(180%);
@@ -216,12 +244,22 @@ a:hover { color: var(--c-point); }
   -webkit-backdrop-filter: url(#glass-3d);
   will-change: backdrop-filter, transform;
   transform: translateZ(0);
-  -webkit-mask: linear-gradient(#000 0 0) content-box,
-                linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask: linear-gradient(#000 0 0) content-box,
-                linear-gradient(#000 0 0);
-          mask-composite: exclude;
+  -webkit-mask-image: var(--sq-ring-l), var(--sq-ring-r),
+                      linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+          mask-image: var(--sq-ring-l), var(--sq-ring-r),
+                      linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-position: left center, right center, center top, center bottom;
+          mask-position: left center, right center, center top, center bottom;
+  -webkit-mask-size: var(--sq-cap) 100%, var(--sq-cap) 100%,
+                     calc(100% - 2 * var(--sq-cap)) 1px,
+                     calc(100% - 2 * var(--sq-cap)) 1px;
+          mask-size: var(--sq-cap) 100%, var(--sq-cap) 100%,
+                     calc(100% - 2 * var(--sq-cap)) 1px,
+                     calc(100% - 2 * var(--sq-cap)) 1px;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-composite: source-over;
+          mask-composite: add;
   opacity: 0;
   animation: glass-layer-fade linear both;
   animation-timeline: scroll(root block);
@@ -233,45 +271,59 @@ a:hover { color: var(--c-point); }
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: inherit;
   pointer-events: none;
-  /* 면이 아니라 선이어야 한다. 1px 을 넘기는 순간 둔탁해진다. */
-  padding: var(--header-line);
   /* 위쪽은 흰 빛, 아래로 내려오며 포인트 컬러가 감돈다.
      1px 은 CSS 렌더 최소 폭이라 더 얇아질 수 없다 — 여기서부터는
      밝기가 두께감을 좌우하므로 알파를 눅인다. */
-  background: linear-gradient(160deg,
+  /* 두 겹이다.
+     - 세로 성분: 예전 inset 하이라이트를 대신한다. 폭에 상관없이 균일해서
+       상단 선이 중앙에서도 캡에서도 같은 밝기로 떨어진다.
+     - 160deg 성분: 원래의 방향성 반사광과 포인트 컬러.
+     둘 다 같은 스퀘어클 링 마스크를 통과하므로 곡률을 그대로 따라간다. */
+  background:
+    linear-gradient(to bottom,
+              rgba(255, 255, 255, 0.10) 0%,
+              rgba(255, 255, 255, 0.02) 55%,
+              rgba(255, 255, 255, 0.04) 100%),
+    linear-gradient(160deg,
               rgba(255, 255, 255, 0.3)  0%,
               rgba(255, 255, 255, 0.05) 34%,
               rgba(195, 189, 255, 0.38) 66%,
               rgba(255, 255, 255, 0.07) 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box,
-                linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask: linear-gradient(#000 0 0) content-box,
-                linear-gradient(#000 0 0);
-          mask-composite: exclude;
+  -webkit-mask-image: var(--sq-ring-l), var(--sq-ring-r),
+                      linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+          mask-image: var(--sq-ring-l), var(--sq-ring-r),
+                      linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-position: left center, right center, center top, center bottom;
+          mask-position: left center, right center, center top, center bottom;
+  -webkit-mask-size: var(--sq-cap) 100%, var(--sq-cap) 100%,
+                     calc(100% - 2 * var(--sq-cap)) 1px,
+                     calc(100% - 2 * var(--sq-cap)) 1px;
+          mask-size: var(--sq-cap) 100%, var(--sq-cap) 100%,
+                     calc(100% - 2 * var(--sq-cap)) 1px,
+                     calc(100% - 2 * var(--sq-cap)) 1px;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-composite: source-over;
+          mask-composite: add;
   opacity: 0;
   animation: glass-layer-fade linear both;
   animation-timeline: scroll(root block);
   animation-range: 0 var(--glass-range);
 }
 
-/* filter 목록은 함수 개수와 순서가 같아야 보간된다. */
+/* box-shadow 목록은 개수와 순서가 같아야 보간된다.
+   바깥 그림자는 래퍼(.header), 안쪽 두께감은 본체(.header__glass) 로 갈라 둔다. */
+@keyframes glass-shadow {
+  from { box-shadow: 0 12px 32px rgba(0, 0, 0, 0); }
+  to   { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); }
+}
+
+/* inset box-shadow 는 사각형 기준이라 캡 구간에서 마스크에 잘린다.
+   두께감과 엣지 하이라이트는 스퀘어클 링(::after)이 전담한다. */
 @keyframes glass-fade {
-  from {
-    background-color: rgba(17, 17, 17, 0);
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0),
-                inset 0 -1px 1px rgba(255, 255, 255, 0),
-                0 8px 32px rgba(0, 0, 0, 0);
-  }
-  to {
-    background-color: var(--c-glass);
-    /* 얇고 단단한 두께감 + 떠 있는 뎁스 */
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15),
-                inset 0 -1px 1px rgba(255, 255, 255, 0.05),
-                0 8px 32px rgba(0, 0, 0, 0.3);
-  }
+  from { background-color: rgba(17, 17, 17, 0); }
+  to   { background-color: var(--c-glass); }
 }
 
 @keyframes glass-layer-fade {
@@ -283,12 +335,12 @@ a:hover { color: var(--c-point); }
    사파리는 animation-timeline 을 구문상 지원해 @supports not 블록을 건너뛰지만,
    키프레임 안의 backdrop-filter 는 적용하지 못한다 (테두리 opacity 는 나오는데
    블러만 빠지는 증상). 그래서 브라우저 구분 없이 JS 의 .is-scrolled 로만 켠다. */
-.header {
+.header__glass {
   transition: backdrop-filter 0.3s ease,
               -webkit-backdrop-filter 0.3s ease;
 }
 
-.header.is-scrolled {
+.header.is-scrolled .header__glass {
   backdrop-filter: blur(16px) saturate(180%);
   /* Safari 는 접두사 없이는 백드롭 블러를 적용하지 않는다 */
   -webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -297,16 +349,18 @@ a:hover { color: var(--c-point); }
 /* 스크롤 타임라인 미지원 — 나머지 속성도 .is-scrolled 로 이원화. */
 @supports not (animation-timeline: scroll()) {
   .header,
+  .header__glass,
   .header::before,
   .header::after {
     animation: none;
   }
 
-  .header {
+  .header { transition: box-shadow 0.3s ease; }
+
+  .header__glass {
     transition: background-color 0.3s ease,
                 backdrop-filter 0.3s ease,
-                -webkit-backdrop-filter 0.3s ease,
-                box-shadow 0.3s ease;
+                -webkit-backdrop-filter 0.3s ease;
   }
 
   .header::before,
@@ -315,10 +369,11 @@ a:hover { color: var(--c-point); }
   }
 
   .header.is-scrolled {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .header.is-scrolled .header__glass {
     background-color: var(--c-glass);
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15),
-                inset 0 -1px 1px rgba(255, 255, 255, 0.05),
-                0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .header.is-scrolled::before,
