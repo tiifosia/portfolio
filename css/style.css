@@ -44,7 +44,6 @@
   --c-text:      #F5F5F5;  /* 메인 텍스트 */
   --c-text-sub:  #8D8D8D;  /* 보조 텍스트 */
   --c-point:     #C3BDFF;  /* 포인트 — 커서/호버/얇은 선에만 */
-  --c-point-dim: rgba(195, 189, 255, 0.35);
   /* 모바일 메뉴 — 유리 뒤로 밝은 썸네일이 지날 때의 가독성 확보용 */
   --c-nav-mobile: #B2B2B2;
   --c-line:      rgba(245, 245, 245, 0.10);
@@ -397,6 +396,8 @@ a:hover { color: var(--c-point); }
 }
 
 .header__logo {
+  /* 좁은 화면에서 두 줄로 꺾이지 않게 */
+  white-space: nowrap;
   font-size: 15px;
   font-weight: var(--fw-bold);
   letter-spacing: 0.02em;
@@ -498,56 +499,22 @@ a:hover { color: var(--c-point); }
   .signature { width: clamp(132px, 17vw, 184px); }
 }
 
-/* 이름 — 타이포는 .section__title 과 공유해 Archive 와 항상 같게 유지한다.
+/* 제목 — 타이포는 .section__title 과 공유해 Archive 와 항상 같게 유지한다.
    여기서는 위치만 잡는다. */
-.about__name {
+.about__title {
   margin-top: 4px;
 }
 
-/* 역할 — 이름보다 작고 얇게, 포인트 컬러로 한 단계 아래 위계 */
-.about__role {
+/* 멤버 — 제목보다 작고 얇게 한 단계 아래 위계, 보조 텍스트 색 */
+.about__members {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.8vh, 8px);
   margin-top: clamp(16px, 2vh, 22px);
   color: var(--c-text-sub);
-  font-size: clamp(16px, 1.6vw, 20px);
+  font-size: clamp(18px, 1.9vw, 24px);
   font-weight: var(--fw-medium);
   letter-spacing: -0.01em;
-}
-
-/* 아이콘은 currentColor 를 써서 텍스트와 항상 같은 색으로 묶인다 */
-.about__icon {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-
-.about__icon-dot {
-  fill: currentColor;
-  stroke: none;
-}
-
-.about__link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  /* 이름 블록과 떨어뜨려 링크임을 분명히 한다 */
-  margin-top: clamp(40px, 6vh, 64px);
-  padding-bottom: 5px;
-  /* 호버 전 기본 상태는 항상 보조 텍스트 색 */
-  color: var(--c-text-sub);
-  font-size: 14px;
-  font-weight: var(--fw-regular);
-  letter-spacing: 0.02em;
-  border-bottom: 1px solid var(--c-point-dim);
-  transition: color 0.35s ease, border-color 0.35s ease,
-              transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
-}
-
-.about__link:hover {
-  color: var(--c-point);
-  border-bottom-color: var(--c-point);
 }
 
 /* ==========================================================================
@@ -630,7 +597,6 @@ a:hover { color: var(--c-point); }
 /* 확대 시 가장자리 계단 현상을 줄인다 */
 .header__logo,
 .nav__link,
-.about__link,
 .work__thumb {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -641,7 +607,6 @@ a:hover { color: var(--c-point); }
 
 .header__logo:hover,
 .nav__link:hover,
-.about__link:hover,
 .work:hover .work__thumb {
   transform: scale(1.05);
 }
@@ -765,7 +730,8 @@ a:hover { color: var(--c-point); }
     --header-top: 14px;
     --header-r: 30px;
   }
-  .header__inner { padding-inline: 22px; }
+  /* 로고가 길어 320px 폭에서 메뉴가 안쪽 여백을 파고들지 않게 최소 간격만 줄인다 */
+  .header__inner { padding-inline: 22px; gap: 16px; }
   .works__grid { grid-template-columns: 1fr; }
   .nav { gap: 18px; }
   .nav__link { font-size: 12px; }
