@@ -427,13 +427,15 @@ a:hover { color: var(--c-point); }
   --hero-lift: clamp(0px, 5.5svh, 50px);
   /* 서명만 추가로 왼쪽으로. 좁은 화면에서는 같이 줄어야 화면 밖으로 안 나간다. */
   --sig-shift: clamp(0px, 9.7vw, 140px);
-  /* 제목 글자 크기 — 줄마다 한 줄에 들어가는 크기를 넘지 않게 한다. 서명 크기 계산에서도 쓴다.
-     나누는 값은 줄 길이(em)에 여유 약 4% 를 더한 것:
-       1줄 Generated World,       Heavy  약 8.1em (실제 화면 캡처에서 역산)
-       2줄 What remains of truth? Light  9.92em  (실제 폰트로 측정) */
+  /* 제목 글자 크기 — 서명 크기 계산에서도 쓴다.
+     1줄: 한 줄에 들어가는 크기를 넘지 않게. Generated World, 는 Heavy 로 약 8.1em
+          (실제 화면 캡처에서 역산) → 여유 약 4% 를 더해 8.4 로 나눈다.
+     2줄: 끝의 '?' 가 1줄 World 의 'o' 끝에 오도록 1줄의 0.675 배.
+          ('o' 끝 = 1줄 6.66em, What remains of truth? = Light 9.87em — 실제 폰트로 측정)
+          1줄보다 항상 짧으므로 따로 폭 제한은 필요 없다. */
   --hero-w: calc(min(100vw, var(--max-w)) - 2 * var(--gutter));
   --hero-fs: min(clamp(44px, 9.5vw, 132px), var(--hero-w) / 8.4);
-  --hero-fs2: min(var(--hero-fs), var(--hero-w) / 10.3);
+  --hero-fs2: calc(var(--hero-fs) * 0.675);
   position: relative;
   min-height: 100svh;
   /* 서명 영상의 screen 합성 대상을 여기로 고정한다. body 배경은 캔버스로
@@ -457,6 +459,9 @@ a:hover { color: var(--c-point); }
 .hero__title em {
   display: block;
   font-size: var(--hero-fs2);
+  /* 자간을 이 줄 크기 기준으로 다시 잡는다. 그대로 두면 1줄 크기로 계산된 px 가
+     물려 내려와, 작아진 이 줄에서는 자간이 더 좁아진다(실측 '?' 가 42px 모자람). */
+  letter-spacing: -0.045em;
   font-style: normal;
   font-weight: var(--fw-light);
   color: var(--c-text-sub);
@@ -535,6 +540,8 @@ a:hover { color: var(--c-point); }
   place-items: center;
   /* 떠 있는 헤더 아래 남는 영역의 가운데 */
   padding: calc(var(--header-top) + var(--header-h)) var(--gutter) 0;
+  /* 문장 뒤 후광이 화면 밖으로 번져 가로 스크롤을 만들지 않게 */
+  overflow: hidden;
   pointer-events: none;
 }
 
