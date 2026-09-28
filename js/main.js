@@ -251,7 +251,12 @@ function hangulSteps(text) {
     var caretSpan = null, caretBefore = false;
     var placeCaret = function () {
       if (!caretSpan) return;
-      var r = caretSpan.getBoundingClientRect(), q = question.getBoundingClientRect();
+      /* 글자 상자가 혹시 두 줄로 쪼개져도(브라우저 차이) 합친 상자 대신
+         글자가 실제로 그려진 조각 하나만 쓴다 — 커서는 늘 한 줄 높이 */
+      var parts = Array.prototype.filter.call(caretSpan.getClientRects(), function (b) { return b.width > 1; });
+      if (!parts.length) return;
+      var r = caretBefore ? parts[0] : parts[parts.length - 1];
+      var q = question.getBoundingClientRect();
       var fs = parseFloat(getComputedStyle(question).fontSize);
       var x = caretBefore ? r.left - q.left - 0.1 * fs : r.right - q.left + 0.04 * fs;
       caret.style.height = r.height * 0.76 + 'px';
