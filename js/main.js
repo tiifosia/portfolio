@@ -127,9 +127,14 @@
   if (!window.gsap || !window.ScrollTrigger ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     for (var i = 0; i < items.length; i++) items[i].removeAttribute('data-reveal');
-    /* 질문은 타이핑 없이 제목 아래에 그대로 둔다 */
+    /* 질문은 타이핑 없이, 첫 화면 바로 다음에 제 화면을 하나 차지하게 둔다.
+       히어로 안에 두면 제목 아래로 흘러 서명과 겹친다. */
     var still = document.querySelector('.hero__ask');
-    if (still) { still.hidden = false; still.classList.add('is-static'); }
+    if (still) {
+      document.querySelector('.hero').after(still);
+      still.hidden = false;
+      still.classList.add('is-static');
+    }
     return;
   }
 

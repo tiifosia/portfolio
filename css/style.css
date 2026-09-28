@@ -427,6 +427,8 @@ a:hover { color: var(--c-point); }
   --hero-lift: clamp(0px, 5.5svh, 50px);
   /* 서명만 추가로 왼쪽으로. 좁은 화면에서는 같이 줄어야 화면 밖으로 안 나간다. */
   --sig-shift: clamp(0px, 9.7vw, 140px);
+  /* 제목 글자 크기 — 서명 크기 계산에서도 쓴다 */
+  --hero-fs: clamp(44px, 9.5vw, 132px);
   position: relative;
   min-height: 100svh;
   /* 서명 영상의 screen 합성 대상을 여기로 고정한다. body 배경은 캔버스로
@@ -441,7 +443,7 @@ a:hover { color: var(--c-point); }
 }
 
 .hero__title {
-  font-size: clamp(44px, 9.5vw, 132px);
+  font-size: var(--hero-fs);
   font-weight: var(--fw-heavy);
   line-height: 1.04;
   letter-spacing: -0.045em;
@@ -454,6 +456,22 @@ a:hover { color: var(--c-point); }
   color: var(--c-text-sub);
 }
 
+/* 서명이 들어갈 수 있는 최대 폭 — 서명 상자 윗변이 제목 아랫변보다 16px 아래에 오도록.
+     제목 아랫변  = (화면높이 + 위패딩 - 아래패딩 + 제목높이) / 2   (세로 가운데 정렬)
+     서명 윗변    = 화면높이 - 아래여백 - 폭 × 0.8976                (영상 비율 754/840)
+   두 식을 풀면 hero-lift 는 서로 지워지고 아래만 남는다(제목 두 줄 = 2 × 1.04em). */
+.signature {
+  --sig-fit: calc((50vh + 20px - clamp(24px, 7vh, 88px) - (var(--header-h) + 40px) / 2
+                   - 1.04 * var(--hero-fs) - 16px) / 0.8976);
+}
+/* svh 를 모르는 브라우저에서 계산이 통째로 무효가 되지 않게 지원할 때만 덮어쓴다 */
+@supports (height: 1svh) {
+  .signature {
+    --sig-fit: calc((50svh + 20px - clamp(24px, 7svh, 88px) - (var(--header-h) + 40px) / 2
+                     - 1.04 * var(--hero-fs) - 16px) / 0.8976);
+  }
+}
+
 /* 서명 영상 — 우측 하단 여백에 놓고, 검은 배경은 screen 합성으로 날린다.
    컨테이너에 배경과 isolation 을 직접 주는 이유: body 배경은 캔버스로
    승격돼 스태킹 컨텍스트 안에 그려지지 않는 경우가 있어, 합성 대상을
@@ -464,7 +482,8 @@ a:hover { color: var(--c-point); }
   right: calc(clamp(0px, 4vw, 64px) + var(--sig-shift));
   bottom: calc(clamp(24px, 7vh, 88px) + var(--hero-lift));
   bottom: calc(clamp(24px, 7svh, 88px) + var(--hero-lift));
-  width: clamp(240px, 26vw, 336px);
+  /* 제목 아래 빈자리보다 커지면 제목(특히 긴 둘째 줄)을 덮는다. 그 높이에 맞춰 줄인다. */
+  width: min(clamp(240px, 26vw, 336px), var(--sig-fit));
   line-height: 0;
   pointer-events: none;
   /* 비디오 가장자리 한 줄이 합성에서 빠져 검게 남는 경우가 있어 잘라낸다.
@@ -496,7 +515,7 @@ a:hover { color: var(--c-point); }
 /* 가로로 누운 좁은 화면 — 세로가 더 빠듯하다 */
 @media (max-height: 560px) {
   .hero { --hero-lift: 0px; }
-  .signature { width: clamp(132px, 17vw, 184px); }
+  .signature { width: min(clamp(132px, 17vw, 184px), var(--sig-fit)); }
 }
 
 /* ==========================================================================
@@ -551,14 +570,13 @@ a:hover { color: var(--c-point); }
   50% { opacity: 0; }
 }
 
-/* 연출 없이 보여줄 때 — 제목 아래 흐름에 그대로 */
+/* 연출 없이 보여줄 때 — 첫 화면 다음에 제 화면을 하나 차지하고 가운데에 놓인다 */
 .hero__ask.is-static {
   position: static;
-  display: block;
-  padding: 0;
-  margin-top: clamp(28px, 5svh, 56px);
+  min-height: 70vh;
+  min-height: 70svh;
+  padding-top: 0;
 }
-.hero__ask.is-static .hero__question { text-align: left; }
 
 /* 제목 — 타이포는 .section__title 과 공유해 Archive 와 항상 같게 유지한다.
    여기서는 위치만 잡는다. */
