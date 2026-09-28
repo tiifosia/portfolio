@@ -243,29 +243,48 @@ function hangulSteps(text) {
     /* 자판을 한 번 누를 때마다의 화면 — ㅇ → 우 → 울 → 우리 → 우린 → 우리느 → 우리는 … */
     var steps = hangulSteps(text);
 
+    /* 커서는 글자와 떨어진 요소 하나 — 글자 위치를 재서 옮긴다 */
+    var caret = document.createElement('span');
+    caret.className = 'hero__caret';
+    caret.setAttribute('aria-hidden', 'true');
+    question.appendChild(caret);
+    var caretSpan = null, caretBefore = false;
+    var placeCaret = function () {
+      if (!caretSpan) return;
+      var r = caretSpan.getBoundingClientRect(), q = question.getBoundingClientRect();
+      var fs = parseFloat(getComputedStyle(question).fontSize);
+      var x = caretBefore ? r.left - q.left - 0.1 * fs : r.right - q.left + 0.04 * fs;
+      caret.style.height = r.height * 0.76 + 'px';
+      caret.style.transform = 'translate(' + x + 'px,' + (r.top - q.top + r.height * 0.14) + 'px)';
+    };
+
     var shown = -1;
     var type = function (k) {
       if (k === shown) return;
       shown = k;
       var now = k > 0 ? Array.from(steps[k - 1]) : [];
       var end = now.length - 1;
-      /* 커서 자리 — 마지막 글자 오른쪽. 방금 친 게 띄어쓰기면 다음 글자 왼쪽. */
-      var caretAt = end, caretStart = false;
-      if (end < 0) { caretAt = 0; caretStart = true; }
-      else if (now[end] === ' ') { caretAt = end + 1; caretStart = true; }
       for (var i = 0; i < slots.length; i++) {
         var span = slots[i];
         if (!span) continue;
         var on = i <= end;
         span.textContent = on ? now[i] : finals[i];
         span.classList.toggle('is-on', on);
-        span.classList.toggle('is-caret', !caretStart && i === caretAt);
-        span.classList.toggle('is-caret-start', caretStart && i === caretAt);
       }
+      /* 커서 자리 — 마지막 글자 오른쪽. 방금 친 게 띄어쓰기면(또는 아직 없으면) 다음 글자 왼쪽. */
+      caretBefore = end < 0 || now[end] === ' ';
+      caretSpan = slots[caretBefore ? end + 1 : end];
+      placeCaret();
+      /* 실제 입력창처럼 치는 동안에는 켜진 채로, 멈추면 깜박이게 — 깜박임을 처음부터 다시 */
+      caret.style.animation = 'none';
+      void caret.offsetWidth;
+      caret.style.animation = '';
       /* 후광은 쓰인 만큼 짙어진다 */
       question.style.setProperty('--glow', steps.length ? k / steps.length : 1);
     };
     type(0);
+    /* 화면 크기가 바뀌면 줄바꿈이 달라지므로 커서를 다시 잰다 */
+    ScrollTrigger.addEventListener('refresh', placeCaret);
 
     /* 서명은 상자(.signature)가 아니라 영상 자체를 흐린다. 상자에 opacity 를 걸면
        그룹이 분리돼 screen 합성이 풀리고 영상의 검은 바탕이 사각형으로 드러난다(실측). */

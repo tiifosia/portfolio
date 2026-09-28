@@ -577,24 +577,23 @@ a:hover { color: var(--c-point); }
   pointer-events: none;
 }
 
-/* 글자를 투명하게 숨긴다(opacity 가 아니라 color) — 숨은 글자에 붙은 커서는 보여야 해서.
-   자리는 처음부터 다 차지하므로 쓰이는 동안 줄바꿈이 움직이지 않는다. */
-.hero__char { position: relative; }
+/* 아직 쓰지 않은 글자는 투명하게 — 자리는 처음부터 다 차지하므로
+   쓰는 동안 줄바꿈이 움직이지 않는다. */
 .hero__char:not(.is-on) { color: transparent; text-shadow: none; }
 
-/* 커서 — 방금 쓰인 글자 오른쪽(아직 한 글자도 없으면 첫 글자 왼쪽)에 붙는다 */
-.hero__char.is-caret::after,
-.hero__char.is-caret-start::after {
-  content: '';
+/* 커서 — 글자에 붙이지 않고 따로 두어 js 가 글자 위치를 재서 옮긴다.
+   글자 뒤에 가상요소로 붙였더니 줄 끝 글자(예: '근거로'의 '로')에서
+   글자 상자가 두 줄로 쪼개지며 커서가 두 줄 높이로 늘어났다(실측). */
+.hero__caret {
   position: absolute;
-  top: 0.14em;
-  bottom: 0.1em;
-  right: -0.1em;
+  top: 0;
+  left: 0;
   width: 2px;
   background-color: var(--c-point);
+  text-shadow: none;
+  pointer-events: none;
   animation: caret-blink 1s steps(1) infinite;
 }
-.hero__char.is-caret-start::after { right: auto; left: -0.1em; }
 
 @keyframes caret-blink {
   50% { opacity: 0; }
