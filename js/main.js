@@ -114,6 +114,64 @@
 })();
 
 /**
+ * 한글을 두벌식 자판으로 칠 때 한 타마다 화면에 보이는 글자열을 만든다.
+ * '우리는' → ['ㅇ', '우', '울', '우리', '우린', '우리느', '우리는']
+ * 받침이 될 수 있는 자음은 일단 앞 글자 받침으로 붙었다가, 모음이 오면 다음 글자로 넘어간다.
+ */
+function hangulSteps(text) {
+  'use strict';
+
+  var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  var JUNG = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+  var JONG = ' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
+  var V2 = { 'ㅗㅏ': 'ㅘ', 'ㅗㅐ': 'ㅙ', 'ㅗㅣ': 'ㅚ', 'ㅜㅓ': 'ㅝ', 'ㅜㅔ': 'ㅞ', 'ㅜㅣ': 'ㅟ', 'ㅡㅣ': 'ㅢ' };
+  var T2 = { 'ㄱㅅ': 'ㄳ', 'ㄴㅈ': 'ㄵ', 'ㄴㅎ': 'ㄶ', 'ㄹㄱ': 'ㄺ', 'ㄹㅁ': 'ㄻ', 'ㄹㅂ': 'ㄼ',
+             'ㄹㅅ': 'ㄽ', 'ㄹㅌ': 'ㄾ', 'ㄹㅍ': 'ㄿ', 'ㄹㅎ': 'ㅀ', 'ㅂㅅ': 'ㅄ' };
+  var split = function (map, ch) {
+    for (var k in map) if (map[k] === ch) return k.split('');
+    return [ch];
+  };
+
+  /* 1. 자판 입력 순서로 풀기 */
+  var keys = [];
+  Array.from(text).forEach(function (ch) {
+    var c = ch.charCodeAt(0) - 0xAC00;
+    if (c < 0 || c > 11171) { keys.push(ch); return; }
+    keys.push(CHO[Math.floor(c / 588)]);
+    keys = keys.concat(split(V2, JUNG[Math.floor(c % 588 / 28)]));
+    if (c % 28) keys = keys.concat(split(T2, JONG[c % 28]));
+  });
+
+  /* 2. 한 타씩 조합하며 화면을 기록 */
+  var done = '', L = '', V = '', T = '';
+  var block = function () {
+    if (L && V) return String.fromCharCode(0xAC00 + (CHO.indexOf(L) * 21 + JUNG.indexOf(V)) * 28 + JONG.indexOf(T || ' '));
+    return L || V;
+  };
+  var commit = function () { done += block(); L = V = T = ''; };
+  var out = [];
+  keys.forEach(function (k) {
+    var isVowel = JUNG.indexOf(k) >= 0, isCons = CHO.indexOf(k) >= 0 || JONG.indexOf(k) > 0;
+    if (isCons) {
+      if (L && V && !T && JONG.indexOf(k) > 0) T = k;
+      else if (T && T2[T + k]) T = T2[T + k];
+      else { commit(); L = k; }
+    } else if (isVowel) {
+      if (T) {
+        /* 받침이 다음 글자 첫소리로 넘어간다 (겹받침이면 뒤쪽 하나만) */
+        var parts = split(T2, T), moved = parts.pop();
+        T = parts.length ? parts[0] : '';
+        commit(); L = moved; V = k;
+      } else if (L && !V) V = k;
+      else if (V && V2[V + k]) V = V2[V + k];
+      else { commit(); V = k; }
+    } else { commit(); done += k; }
+    out.push(done + block());
+  });
+  return out;
+}
+
+/**
  * 스크롤 인터랙션 (GSAP + ScrollTrigger)
  * 절제된 페이드인 · 슬라이드업과 썸네일의 완만한 패럴랙스만 적용한다.
  */
@@ -163,32 +221,49 @@
   if (heroEl && ask && lead) {
     ask.hidden = false;
 
-    /* 글자마다 span 으로 나눈다. 띄어쓰기는 글자로 세지 않고 그대로 둔다. */
+    /* 글자 자리마다 span 을 만들어 최종 글자를 넣어 둔다(투명). 자리를 미리 차지해
+       쓰는 동안 줄바꿈이 흔들리지 않는다. 띄어쓰기는 그냥 텍스트로 둔다. */
     var question = ask.querySelector('.hero__question');
-    var chars = [];
     var text = question.textContent.trim();
+    var finals = Array.from(text);
+    var slots = [];
     question.textContent = '';
-    Array.from(text).forEach(function (ch) {
-      if (ch === ' ') { question.appendChild(document.createTextNode(' ')); return; }
+    finals.forEach(function (ch) {
+      if (ch === ' ') { question.appendChild(document.createTextNode(' ')); slots.push(null); return; }
       var span = document.createElement('span');
       span.className = 'hero__char';
       span.textContent = ch;
       question.appendChild(span);
-      chars.push(span);
+      slots.push(span);
     });
     /* 마지막 물음표는 제목의 구두점처럼 포인트 컬러 */
-    var last = chars[chars.length - 1];
-    if (last && last.textContent === '?') last.classList.add('accent');
+    var lastSlot = slots[slots.length - 1];
+    if (lastSlot && lastSlot.textContent === '?') lastSlot.classList.add('accent');
+
+    /* 자판을 한 번 누를 때마다의 화면 — ㅇ → 우 → 울 → 우리 → 우린 → 우리느 → 우리는 … */
+    var steps = hangulSteps(text);
 
     var shown = -1;
     var type = function (k) {
       if (k === shown) return;
       shown = k;
-      for (var c = 0; c < chars.length; c++) {
-        chars[c].classList.toggle('is-on', c < k);
-        chars[c].classList.toggle('is-caret', c === k - 1);
-        chars[c].classList.toggle('is-caret-start', k === 0 && c === 0);
+      var now = k > 0 ? Array.from(steps[k - 1]) : [];
+      var end = now.length - 1;
+      /* 커서 자리 — 마지막 글자 오른쪽. 방금 친 게 띄어쓰기면 다음 글자 왼쪽. */
+      var caretAt = end, caretStart = false;
+      if (end < 0) { caretAt = 0; caretStart = true; }
+      else if (now[end] === ' ') { caretAt = end + 1; caretStart = true; }
+      for (var i = 0; i < slots.length; i++) {
+        var span = slots[i];
+        if (!span) continue;
+        var on = i <= end;
+        span.textContent = on ? now[i] : finals[i];
+        span.classList.toggle('is-on', on);
+        span.classList.toggle('is-caret', !caretStart && i === caretAt);
+        span.classList.toggle('is-caret-start', caretStart && i === caretAt);
       }
+      /* 후광은 쓰인 만큼 짙어진다 */
+      question.style.setProperty('--glow', steps.length ? k / steps.length : 1);
     };
     type(0);
 
@@ -219,7 +294,7 @@
       .fromTo(ask, { opacity: 0 }, { opacity: 1, duration: 0.06 }, 0.24)
       /* 3. 스크롤한 만큼 쓰인다 */
       .fromTo(typing, { n: 0 },
-        { n: chars.length, duration: 0.6,
+        { n: steps.length, duration: 0.6,
           onUpdate: function () { type(Math.round(typing.n)); } }, 0.3)
       /* 다 쓴 문장을 잠깐 보여준 뒤 고정을 푼다 */
       .to({}, { duration: 0.1 }, 0.9);

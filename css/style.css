@@ -427,8 +427,13 @@ a:hover { color: var(--c-point); }
   --hero-lift: clamp(0px, 5.5svh, 50px);
   /* 서명만 추가로 왼쪽으로. 좁은 화면에서는 같이 줄어야 화면 밖으로 안 나간다. */
   --sig-shift: clamp(0px, 9.7vw, 140px);
-  /* 제목 글자 크기 — 서명 크기 계산에서도 쓴다 */
-  --hero-fs: clamp(44px, 9.5vw, 132px);
+  /* 제목 글자 크기 — 줄마다 한 줄에 들어가는 크기를 넘지 않게 한다. 서명 크기 계산에서도 쓴다.
+     나누는 값은 줄 길이(em)에 여유 약 4% 를 더한 것:
+       1줄 Generated World,       Heavy  약 8.1em (실제 화면 캡처에서 역산)
+       2줄 What remains of truth? Light  9.92em  (실제 폰트로 측정) */
+  --hero-w: calc(min(100vw, var(--max-w)) - 2 * var(--gutter));
+  --hero-fs: min(clamp(44px, 9.5vw, 132px), var(--hero-w) / 8.4);
+  --hero-fs2: min(var(--hero-fs), var(--hero-w) / 10.3);
   position: relative;
   min-height: 100svh;
   /* 서명 영상의 screen 합성 대상을 여기로 고정한다. body 배경은 캔버스로
@@ -451,6 +456,7 @@ a:hover { color: var(--c-point); }
 
 .hero__title em {
   display: block;
+  font-size: var(--hero-fs2);
   font-style: normal;
   font-weight: var(--fw-light);
   color: var(--c-text-sub);
@@ -459,16 +465,16 @@ a:hover { color: var(--c-point); }
 /* 서명이 들어갈 수 있는 최대 폭 — 서명 상자 윗변이 제목 아랫변보다 16px 아래에 오도록.
      제목 아랫변  = (화면높이 + 위패딩 - 아래패딩 + 제목높이) / 2   (세로 가운데 정렬)
      서명 윗변    = 화면높이 - 아래여백 - 폭 × 0.8976                (영상 비율 754/840)
-   두 식을 풀면 hero-lift 는 서로 지워지고 아래만 남는다(제목 두 줄 = 2 × 1.04em). */
+   두 식을 풀면 hero-lift 는 서로 지워지고 아래만 남는다(제목 높이 = 1.04 × (1줄 + 2줄 크기)). */
 .signature {
   --sig-fit: calc((50vh + 20px - clamp(24px, 7vh, 88px) - (var(--header-h) + 40px) / 2
-                   - 1.04 * var(--hero-fs) - 16px) / 0.8976);
+                   - 0.52 * (var(--hero-fs) + var(--hero-fs2)) - 16px) / 0.8976);
 }
 /* svh 를 모르는 브라우저에서 계산이 통째로 무효가 되지 않게 지원할 때만 덮어쓴다 */
 @supports (height: 1svh) {
   .signature {
     --sig-fit: calc((50svh + 20px - clamp(24px, 7svh, 88px) - (var(--header-h) + 40px) / 2
-                     - 1.04 * var(--hero-fs) - 16px) / 0.8976);
+                     - 0.52 * (var(--hero-fs) + var(--hero-fs2)) - 16px) / 0.8976);
   }
 }
 
@@ -536,21 +542,38 @@ a:hover { color: var(--c-point); }
 .hero__ask[hidden] { display: none; }
 
 .hero__question {
+  position: relative;
+  isolation: isolate;
   max-width: 12.5em;
   font-size: clamp(24px, 4.2vw, 60px);
-  font-weight: var(--fw-bold);
-  line-height: 1.35;
-  letter-spacing: -0.03em;
+  font-weight: var(--fw-light);
+  line-height: 1.4;
+  letter-spacing: -0.02em;
   text-align: center;
   /* 한국어가 단어 중간에서 꺾이지 않게, 두 줄 길이는 비슷하게 */
   word-break: keep-all;
   text-wrap: balance;
+  /* 글자 둘레의 옅은 빛 */
+  text-shadow: 0 0 0.5em rgba(195, 189, 255, 0.35);
+}
+
+/* 문장 뒤의 후광 — 포인트 컬러를 아주 옅게 번지게. 타이핑이 진행될수록 짙어진다(--glow). */
+.hero__question::before {
+  content: '';
+  position: absolute;
+  inset: -45% -20%;
+  z-index: -1;
+  background: radial-gradient(closest-side,
+              rgba(195, 189, 255, 0.16), rgba(195, 189, 255, 0.06) 55%, rgba(195, 189, 255, 0) 100%);
+  filter: blur(24px);
+  opacity: var(--glow, 1);
+  pointer-events: none;
 }
 
 /* 글자를 투명하게 숨긴다(opacity 가 아니라 color) — 숨은 글자에 붙은 커서는 보여야 해서.
    자리는 처음부터 다 차지하므로 쓰이는 동안 줄바꿈이 움직이지 않는다. */
 .hero__char { position: relative; }
-.hero__char:not(.is-on) { color: transparent; }
+.hero__char:not(.is-on) { color: transparent; text-shadow: none; }
 
 /* 커서 — 방금 쓰인 글자 오른쪽(아직 한 글자도 없으면 첫 글자 왼쪽)에 붙는다 */
 .hero__char.is-caret::after,
