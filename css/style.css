@@ -499,6 +499,67 @@ a:hover { color: var(--c-point); }
   .signature { width: clamp(132px, 17vw, 184px); }
 }
 
+/* ==========================================================================
+   히어로 → 질문 타이핑 (진행은 js 의 스크롤 타임라인이 맡는다)
+   ========================================================================== */
+.hero__ask {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  /* 떠 있는 헤더 아래 남는 영역의 가운데 */
+  padding: calc(var(--header-top) + var(--header-h)) var(--gutter) 0;
+  pointer-events: none;
+}
+
+/* display 를 줬으므로 hidden 속성이 먹도록 다시 명시 */
+.hero__ask[hidden] { display: none; }
+
+.hero__question {
+  max-width: 12.5em;
+  font-size: clamp(24px, 4.2vw, 60px);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+  letter-spacing: -0.03em;
+  text-align: center;
+  /* 한국어가 단어 중간에서 꺾이지 않게, 두 줄 길이는 비슷하게 */
+  word-break: keep-all;
+  text-wrap: balance;
+}
+
+/* 글자를 투명하게 숨긴다(opacity 가 아니라 color) — 숨은 글자에 붙은 커서는 보여야 해서.
+   자리는 처음부터 다 차지하므로 쓰이는 동안 줄바꿈이 움직이지 않는다. */
+.hero__char { position: relative; }
+.hero__char:not(.is-on) { color: transparent; }
+
+/* 커서 — 방금 쓰인 글자 오른쪽(아직 한 글자도 없으면 첫 글자 왼쪽)에 붙는다 */
+.hero__char.is-caret::after,
+.hero__char.is-caret-start::after {
+  content: '';
+  position: absolute;
+  top: 0.14em;
+  bottom: 0.1em;
+  right: -0.1em;
+  width: 2px;
+  background-color: var(--c-point);
+  animation: caret-blink 1s steps(1) infinite;
+}
+.hero__char.is-caret-start::after { right: auto; left: -0.1em; }
+
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+
+/* 연출 없이 보여줄 때 — 제목 아래 흐름에 그대로 */
+.hero__ask.is-static {
+  position: static;
+  display: block;
+  padding: 0;
+  margin-top: clamp(28px, 5svh, 56px);
+}
+.hero__ask.is-static .hero__question { text-align: left; }
+
 /* 제목 — 타이포는 .section__title 과 공유해 Archive 와 항상 같게 유지한다.
    여기서는 위치만 잡는다. */
 .about__title {

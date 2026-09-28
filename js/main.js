@@ -1,4 +1,19 @@
 /**
+ * 새로고침하면 항상 첫 화면 맨 위에서 시작한다.
+ * 브라우저의 스크롤 위치 복원을 끄고, 주소의 #about 같은 앵커도 지운다
+ * (남아 있으면 새로고침 때 그 섹션으로 뛰어간다).
+ */
+(function () {
+  'use strict';
+
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  if (window.location.hash) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+  window.scrollTo(0, 0);
+})();
+
+/**
  * 헤더 스크롤 상태
  * 최상단을 벗어나면 헤더에 배경(블러)을 입힌다.
  */
@@ -112,10 +127,17 @@
   if (!window.gsap || !window.ScrollTrigger ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     for (var i = 0; i < items.length; i++) items[i].removeAttribute('data-reveal');
+    /* 질문은 타이핑 없이 제목 아래에 그대로 둔다 */
+    var still = document.querySelector('.hero__ask');
+    if (still) { still.hidden = false; still.classList.add('is-static'); }
     return;
   }
 
   gsap.registerPlugin(ScrollTrigger);
+
+  /* ScrollTrigger 는 불러올 때의 복원 설정(auto)을 기억했다가 레이아웃을 다시 잴 때마다
+     되돌려 놓는다(실측 — 새로고침하면 보던 위치로 돌아갔다). manual 로 고정한다. */
+  ScrollTrigger.clearScrollMemory('manual');
 
   var EASE = 'power2.out';
 
@@ -126,6 +148,76 @@
       { opacity: 0, y: 28 },
       { opacity: 1, y: 0, duration: 1.1, ease: EASE, delay: 0.15,
         clearProps: 'transform,translate,rotate,scale' });
+  }
+
+  /* 히어로 → 질문 — 히어로를 잠시 고정하고 스크롤한 만큼만 진행한다(되감기 가능).
+     제목과 서명이 물러난 뒤, 빈 화면 가운데에 질문이 스크롤한 만큼 한 글자씩 쓰인다. */
+  var heroEl = document.querySelector('.hero');
+  var ask = document.querySelector('.hero__ask');
+  var lead = document.querySelector('.hero__lead');
+  if (heroEl && ask && lead) {
+    ask.hidden = false;
+
+    /* 글자마다 span 으로 나눈다. 띄어쓰기는 글자로 세지 않고 그대로 둔다. */
+    var question = ask.querySelector('.hero__question');
+    var chars = [];
+    var text = question.textContent.trim();
+    question.textContent = '';
+    Array.from(text).forEach(function (ch) {
+      if (ch === ' ') { question.appendChild(document.createTextNode(' ')); return; }
+      var span = document.createElement('span');
+      span.className = 'hero__char';
+      span.textContent = ch;
+      question.appendChild(span);
+      chars.push(span);
+    });
+    /* 마지막 물음표는 제목의 구두점처럼 포인트 컬러 */
+    var last = chars[chars.length - 1];
+    if (last && last.textContent === '?') last.classList.add('accent');
+
+    var shown = -1;
+    var type = function (k) {
+      if (k === shown) return;
+      shown = k;
+      for (var c = 0; c < chars.length; c++) {
+        chars[c].classList.toggle('is-on', c < k);
+        chars[c].classList.toggle('is-caret', c === k - 1);
+        chars[c].classList.toggle('is-caret-start', k === 0 && c === 0);
+      }
+    };
+    type(0);
+
+    /* 서명은 상자(.signature)가 아니라 영상 자체를 흐린다. 상자에 opacity 를 걸면
+       그룹이 분리돼 screen 합성이 풀리고 영상의 검은 바탕이 사각형으로 드러난다(실측). */
+    var sig = document.querySelector('.signature__video');
+    var typing = { n: 0 };
+
+    var intro = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        trigger: heroEl,
+        start: 'top top',
+        end: '+=200%',
+        pin: true,
+        scrub: 0.6,
+        anticipatePin: 1
+      }
+    });
+
+    intro
+      /* 1. 제목과 서명이 위로 살짝 뜨며 물러난다 */
+      .fromTo(lead, { opacity: 1, y: 0 },
+        { opacity: 0, y: -40, duration: 0.24, ease: 'power1.in' }, 0);
+    if (sig) intro.fromTo(sig, { opacity: 1 }, { opacity: 0, duration: 0.2 }, 0);
+    intro
+      /* 2. 빈 화면에 커서가 나타나고 */
+      .fromTo(ask, { opacity: 0 }, { opacity: 1, duration: 0.06 }, 0.24)
+      /* 3. 스크롤한 만큼 쓰인다 */
+      .fromTo(typing, { n: 0 },
+        { n: chars.length, duration: 0.6,
+          onUpdate: function () { type(Math.round(typing.n)); } }, 0.3)
+      /* 다 쓴 문장을 잠깐 보여준 뒤 고정을 푼다 */
+      .to({}, { duration: 0.1 }, 0.9);
   }
 
   /* 각 섹션 — 화면에 들어올 때 순차 노출 */

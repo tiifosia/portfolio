@@ -68,12 +68,21 @@
 
     <!-- Hero -->
     <section class="container hero">
-      <h1 class="hero__title" data-reveal>
-        Frame by frame<span class="accent">,</span>
-        <em>story by story<span class="accent">.</span></em>
-      </h1>
+      <!-- 스크롤 연출에서 제목을 물리는 틀. 등장 애니메이션(h1)과 겹치지 않게 분리 -->
+      <div class="hero__lead">
+        <h1 class="hero__title" data-reveal>
+          Generated World<span class="accent">,</span>
+          <em>What remains of truth<span class="accent">?</span></em>
+        </h1>
+      </div>
       <div class="signature" role="img" aria-label="정희성 서명">
         <video class="signature__video" src="assets/signature.mp4" autoplay muted playsinline></video>
+      </div>
+
+      <!-- 스크롤하면 제목과 서명이 물러나고 이 문장이 스크롤한 만큼 한 글자씩 쓰인다.
+           연출을 못 쓰는 환경(GSAP 미로드 · 모션 최소화)에서는 제목 아래에 그냥 놓인다. -->
+      <div class="hero__ask" hidden>
+        <p class="hero__question">우리는 무엇을 근거로 세계를 실제라고 믿는가?</p>
       </div>
     </section>
 
