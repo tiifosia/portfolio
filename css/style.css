@@ -614,16 +614,33 @@ a:hover { color: var(--c-point); }
   margin-top: 4px;
 }
 
-/* 멤버 — 제목보다 작고 얇게 한 단계 아래 위계, 보조 텍스트 색 */
+/* Project 소개 다음의 Members — 두 묶음이 구분되게 띄운다 */
+.about__title--next {
+  margin-top: clamp(56px, 8vh, 96px);
+}
+
+/* 소개 · 멤버 — 제목보다 작고 얇게 한 단계 아래 위계, 보조 텍스트 색 */
+.about__desc,
 .about__members {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(4px, 0.8vh, 8px);
   margin-top: clamp(16px, 2vh, 22px);
   color: var(--c-text-sub);
   font-size: clamp(18px, 1.9vw, 24px);
   font-weight: var(--fw-medium);
   letter-spacing: -0.01em;
+}
+
+/* 소개 문장 — 한 줄이 너무 길지 않게, 한국어는 단어 단위로 꺾는다 */
+.about__desc {
+  max-width: 34em;
+  word-break: keep-all;
+  /* 마지막 줄에 한 단어만 남지 않게 */
+  text-wrap: pretty;
+}
+
+.about__members {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.8vh, 8px);
 }
 
 /* ==========================================================================
