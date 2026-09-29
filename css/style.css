@@ -973,6 +973,8 @@ a:hover { color: var(--c-point); }
   align-items: center;
   gap: 14px;
   margin-top: 18px;
+  /* Details 버튼 높이 — 버튼이 없는 작품도 제목이 옆 카드와 같은 높이에 선다 */
+  min-height: 29px;
 }
 
 .work__title {
