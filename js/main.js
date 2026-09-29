@@ -14,12 +14,14 @@
 })();
 
 /**
- * 부드러운 스크롤 — 휠 한 번(또는 링크 이동)마다 '서서히 출발 → 최고 속도 → 서서히 멈춤'.
+ * 부드러운 스크롤 — 휠 한 번(또는 키보드)마다 '서서히 출발 → 최고 속도 → 서서히 멈춤'.
  * 브라우저 기본 휠은 누르자마자 최고 속도로 움직이고 뚝 멈춰 어색하다.
  * 목표 위치를 부드럽게 따라가는 단계를 4번 겹쳤다(각 단계가 앞 단계를 지수적으로 따라감).
  * 한 번 굴리면 속도가 0 에서 서서히 올라 약 0.25초에 최고, 약 0.7초에 거의 멈춘다(95%).
  * 계속 굴려도 속도가 끊기지 않고, 목표를 지나쳤다 되돌아오는(튕김) 일이 원리상 없다.
  * 터치(휴대폰)는 기기 기본 관성을 그대로 쓰고, 모션 최소화 설정이면 켜지 않는다.
+ * 헤더 링크는 여기서 다루지 않는다(스크롤 없이 바로 이동 — 아래 '헤더 이동').
+ * 그쪽에서 쓰도록 멈춤(stop)·잠금(lock)만 window.pageScroll 로 내놓는다.
  */
 (function () {
   'use strict';
@@ -32,7 +34,7 @@
   /* 매 프레임 위치를 직접 정하므로 CSS 의 smooth 는 끈다(겹치면 두 번 부드러워져 어긋난다) */
   root.style.scrollBehavior = 'auto';
 
-  var stages = [], tau = TAU, running = false, last = 0, lastSet = null;
+  var stages = [], running = false, last = 0, lastSet = null, raf = 0, locked = false;
   var reset = function (y) { stages = []; for (var i = 0; i <= N; i++) stages.push(y); };
   reset(window.scrollY);
 
@@ -44,33 +46,43 @@
        다른 탭에 다녀온 뒤처럼 아주 긴 간격만 잘라 둔다 */
     var dt = Math.min(0.25, (now - last) / 1000);
     last = now;
-    var k = 1 - Math.exp(-dt / tau);
+    var k = 1 - Math.exp(-dt / TAU);
     for (var i = 1; i <= N; i++) stages[i] += (stages[i - 1] - stages[i]) * k;
     var y = stages[N];
     var done = true;
     for (var j = 1; j <= N; j++) if (Math.abs(stages[j] - stages[0]) > 0.4) { done = false; break; }
-    if (done) { reset(stages[0]); y = stages[0]; running = false; tau = TAU; }
+    if (done) { reset(stages[0]); y = stages[0]; running = false; }
     lastSet = Math.round(y);
     window.scrollTo(0, y);
-    if (running) requestAnimationFrame(tick);
+    if (running) raf = requestAnimationFrame(tick);
   };
 
-  var go = function (to, t) {
+  var go = function (to) {
     if (!running) reset(window.scrollY);
     stages[0] = clamp(to);
-    if (t) tau = t;
-    if (!running) { running = true; last = performance.now(); requestAnimationFrame(tick); }
+    if (!running) { running = true; last = performance.now(); raf = requestAnimationFrame(tick); }
+  };
+
+  var stop = function () {
+    cancelAnimationFrame(raf);
+    running = false; reset(window.scrollY);
+  };
+  window.pageScroll = {
+    stop: stop,
+    /* 헤더 이동의 암전 동안에는 휠·키보드를 먹어 둔다(밑에서 페이지가 움직이지 않게) */
+    lock: function (on) { locked = on; if (on) stop(); }
   };
 
   /* 다른 방법(스크롤바 끌기, 터치, 새로고침 등)으로 움직였으면 그 자리에서 다시 시작 */
   window.addEventListener('scroll', function () {
     if (!running) { reset(window.scrollY); return; }
-    if (lastSet !== null && Math.abs(window.scrollY - lastSet) > 2) { running = false; tau = TAU; reset(window.scrollY); }
+    if (lastSet !== null && Math.abs(window.scrollY - lastSet) > 2) { running = false; reset(window.scrollY); }
   }, { passive: true });
 
   /* 휠 · 트랙패드 */
   window.addEventListener('wheel', function (e) {
     if (e.ctrlKey || e.defaultPrevented) return;                   /* 확대/축소 */
+    if (locked) { e.preventDefault(); return; }
     if (document.body.style.overflow === 'hidden') return;         /* 모달이 열려 있음 */
     if (e.target.closest && e.target.closest('.modal')) return;
     var unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
@@ -85,6 +97,10 @@
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
     if (document.body.style.overflow === 'hidden') return;
     var el = e.target;
+    if (locked && !(el.closest && el.closest('input, textarea, select, [contenteditable]'))) {
+      if (/^(Arrow(Up|Down)|Page(Up|Down)| |Spacebar|Home|End)$/.test(e.key)) e.preventDefault();
+      return;
+    }
     if (el.closest && el.closest('input, textarea, select, button, [contenteditable], .modal')) return;
     var page = window.innerHeight * 0.85, d = null;
     switch (e.key) {
@@ -99,18 +115,6 @@
     if (d === null) return;
     e.preventDefault();
     go((running ? stages[0] : window.scrollY) + d);
-  });
-
-  /* 페이지 안 링크(#about 등) — 같은 방식으로, 멀수록 조금 더 느긋하게 */
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('a[href^="#"]');
-    if (!a || e.defaultPrevented) return;
-    var id = a.getAttribute('href');
-    var el = id === '#top' ? null : document.querySelector(id);
-    if (id !== '#top' && !el) return;
-    e.preventDefault();
-    var to = el ? el.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(el).scrollMarginTop) || 0) : 0;
-    go(to, Math.min(0.15, TAU + Math.abs(to - window.scrollY) / 60000));
   });
 })();
 
@@ -387,9 +391,31 @@ function hangulSteps(text) {
   var items = document.querySelectorAll('[data-reveal]');
   if (!items.length) return;
 
+  /* 헤더 이동(로고 · About · Works) — 스크롤로 사이 화면을 훑지 않고 그 섹션에서 바로 시작한다.
+     주소에 #about 은 남기지 않는다(새로고침은 어차피 맨 위부터). */
+  var onJump = function (fn) {
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href^="#"]');
+      if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var id = a.getAttribute('href').slice(1);
+      var el = id === 'top' ? null : document.getElementById(id);
+      if (id !== 'top' && !el) return;
+      e.preventDefault();
+      fn(id, el);
+    });
+  };
+  var jumpY = function (el) {
+    if (!el) return 0;
+    return el.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(el).scrollMarginTop) || 0);
+  };
+
   /* GSAP 로드 실패나 모션 최소화 설정에서는 애니메이션 없이 즉시 노출한다 */
   if (!window.gsap || !window.ScrollTrigger ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    onJump(function (id, el) {
+      if (window.pageScroll) window.pageScroll.stop();
+      window.scrollTo({ top: jumpY(el), behavior: 'instant' });
+    });
     for (var i = 0; i < items.length; i++) items[i].removeAttribute('data-reveal');
     /* Project 스토리는 문장 넷과 완성된 지도만 */
     var storyStill = document.querySelector('.story');
@@ -413,10 +439,13 @@ function hangulSteps(text) {
 
   var EASE = 'power2.out';
 
+  /* 섹션마다 등장 연출을 담아 둔다 — 헤더로 이동하면 같은 연출을 다시 튼다 */
+  var reveals = {};
+
   /* 히어로 — 진입 시 한 번 */
   var hero = document.querySelector('.hero [data-reveal]');
   if (hero) {
-    gsap.fromTo(hero,
+    reveals.top = gsap.fromTo(hero,
       { opacity: 0, y: 28 },
       { opacity: 1, y: 0, duration: 1.1, ease: EASE, delay: 0.15,
         clearProps: 'transform,translate,rotate,scale' });
@@ -688,7 +717,7 @@ function hangulSteps(text) {
     var targets = section.querySelectorAll('[data-reveal]');
     if (!targets.length) return;
 
-    gsap.fromTo(targets,
+    reveals[section.id] = gsap.fromTo(targets,
       { opacity: 0, y: 24 },
       {
         opacity: 1, y: 0, duration: 0.9, ease: EASE, stagger: 0.1,
@@ -696,6 +725,37 @@ function hangulSteps(text) {
         clearProps: 'transform,translate,rotate,scale',
         scrollTrigger: { trigger: section, start: 'top 85%' }
       });
+  });
+
+  /* 헤더 이동 — 배경색 막이 0.2초 덮는 사이 그 섹션으로 옮기고, 막이 걷히며 섹션 등장 연출.
+     누를 때마다 같은 연출(이미 본 섹션도). 막은 헤더 바로 아래 층이라 헤더는 그대로 보인다. */
+  var veil = document.createElement('div');
+  veil.className = 'veil';
+  veil.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(veil);
+  var jumping = null;   /* 막이 덮이는 중이면 갈 곳 — 그새 다른 메뉴를 누르면 마지막 것으로 */
+  onJump(function (id, el) {
+    if (jumping) { jumping = { id: id, el: el }; return; }
+    jumping = { id: id, el: el };
+    if (window.pageScroll) window.pageScroll.lock(true);
+    gsap.to(veil, {
+      autoAlpha: 1, duration: 0.2, ease: 'power1.in', overwrite: true,
+      onComplete: function () {
+        var to = jumping;
+        window.scrollTo({ top: jumpY(to.el), behavior: 'instant' });
+        ScrollTrigger.update();
+        /* 스크롤을 늦게 따라오는(scrub) 연출은 곧장 제자리로 — 막이 걷힐 때 타이핑·지도가
+           거꾸로 감기거나 뒤따라오는 모습이 보이지 않게 */
+        ScrollTrigger.getAll().forEach(function (st) {
+          var tw = st.getTween();
+          if (tw) tw.progress(1);
+        });
+        if (reveals[to.id]) reveals[to.id].restart(true);
+        if (window.pageScroll) window.pageScroll.lock(false);
+        jumping = null;
+        gsap.to(veil, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+      }
+    });
   });
 
   /* 썸네일 — 프레임 안에서 이미지만 천천히 흐른다 */

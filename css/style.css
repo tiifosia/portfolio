@@ -966,8 +966,17 @@ a:hover { color: var(--c-point); }
 
 .work:hover .work__title { color: var(--c-point); }
 
+/* 썸네일 아래 한 줄 — 제목은 왼쪽, 연도와 Details 는 오른쪽 */
+.work__info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
 .work__title {
-  margin-top: 20px;
+  flex: 1;
+  min-width: 0;
   font-size: clamp(16px, 1.4vw, 19px);
   font-weight: var(--fw-medium);
   line-height: 1.45;
@@ -976,33 +985,41 @@ a:hover { color: var(--c-point); }
 }
 
 .work__meta {
-  margin-top: 8px;
+  flex-shrink: 0;
   color: var(--c-text-sub);
   font-size: 13px;
   font-weight: var(--fw-light);
   letter-spacing: 0.02em;
 }
 
-/* Details — 연도 아래 작은 글자 링크. 기본은 보조 색, 호버 시 포인트 컬러 */
+/* Details — 알약 버튼. 기본은 보조 색 테두리, 호버 시 포인트 컬러 */
 .work__more {
-  display: inline-block;
-  margin-top: 14px;
-  padding: 0 0 4px;
-  border: 0;
-  border-bottom: 1px solid rgba(195, 189, 255, 0.35);
+  position: relative;
+  flex-shrink: 0;
+  padding: 8px 14px 7px;
+  border: 1px solid var(--c-bg-sub);
+  border-radius: 999px;
   background: none;
   color: var(--c-text-sub);
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: var(--fw-regular);
-  letter-spacing: 0.02em;
+  line-height: 1;
+  letter-spacing: 0.03em;
   cursor: pointer;
   transition: color 0.35s ease, border-color 0.35s ease;
 }
 
+/* 손가락으로도 누르기 쉽게 누르는 범위만 넓힌다(보이는 크기는 그대로) */
+.work__more::after {
+  content: '';
+  position: absolute;
+  inset: -9px -6px;
+}
+
 .work__more:hover {
   color: var(--c-point);
-  border-bottom-color: var(--c-point);
+  border-color: var(--c-point);
 }
 
 /* ==========================================================================
@@ -1032,6 +1049,19 @@ a:hover { color: var(--c-point); }
 .nav__link:hover,
 .work:hover .work__thumb {
   transform: scale(1.05);
+}
+
+/* ==========================================================================
+   헤더 이동 막 — 누르면 배경색으로 잠깐 덮었다 걷는다(헤더 바로 아래 층)
+   ========================================================================== */
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-header) - 1);
+  background: var(--c-bg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* ==========================================================================
