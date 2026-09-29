@@ -642,6 +642,279 @@ a:hover { color: var(--c-point); }
   gap: clamp(4px, 0.8vh, 8px);
 }
 
+/* 작품 이름 — 포인트 컬러에 옅은 후광 */
+.about__name {
+  text-shadow: 0 0 0.6em rgba(195, 189, 255, 0.45);
+}
+
+
+/* ==========================================================================
+   Project 스토리 — 점 세계지도 위에서 작품 진행 방식을 네 단계로
+   색: 육지 #333333 · 중립 #8D8D8D · 실제로 판단 #F5F5F5 · AI로 판단 #C3BDFF
+   ========================================================================== */
+.story {
+  --story-real: var(--c-text);
+  --story-ai: var(--c-point);
+  --story-neutral: var(--c-text-sub);
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  margin-top: clamp(24px, 4vh, 48px);
+}
+
+.story__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+  align-items: center;
+  gap: clamp(32px, 4vw, 72px);
+  height: 100%;
+  /* 떠 있는 헤더 아래 영역의 가운데 */
+  padding-top: calc(var(--header-top) + var(--header-h));
+}
+
+/* ── 글 ─────────────────────────────────────────── */
+.story__count {
+  color: var(--c-point);
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.18em;
+}
+
+.story__num { color: var(--c-text); }
+
+/* 네 문장을 한 칸에 겹쳐 두고 단계마다 바꿔 보여준다 */
+.story__steps {
+  display: grid;
+  margin: clamp(16px, 2.4vh, 24px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.story__step {
+  grid-area: 1 / 1;
+  color: var(--c-text);
+  font-size: clamp(20px, 2vw, 30px);
+  font-weight: var(--fw-light);
+  line-height: 1.55;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+  text-wrap: pretty;
+}
+
+.story__bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-width: 240px;
+  margin-top: clamp(24px, 4vh, 40px);
+}
+
+.story__bar i {
+  display: block;
+  height: 2px;
+  background:
+    linear-gradient(var(--c-point), var(--c-point)) left / var(--fill, 0%) 100% no-repeat,
+    var(--c-bg-sub);
+}
+
+/* ── 지도 ───────────────────────────────────────── */
+.story__stage { position: relative; }
+
+.story__map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.story__land { fill: var(--c-bg-sub); }
+
+/* 크기 변형은 js(GSAP)가 기준점까지 계산한다 — 여기서 transform-origin 을 주면 이중으로 적용돼 점이 튄다(실측) */
+.story__pt { fill: var(--story-neutral); }
+
+/* 판단이 모이면 — AI 쪽은 포인트 컬러로 은은하게 빛난다 */
+.story__pts { filter: drop-shadow(0 0 4px rgba(195, 189, 255, 0)); }
+
+/* 선택된 장소 둘레로 퍼지는 고리 — 선택 단계에서만 */
+.story__ring {
+  fill: none;
+  stroke: var(--c-point);
+  stroke-width: 1;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.story.is-picking .story__ring {
+  animation: story-ring 1.8s ease-out infinite;
+}
+.story.is-picking .story__ring + .story__ring { animation-delay: 0.9s; }
+
+@keyframes story-ring {
+  0%   { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(5); }
+}
+
+/* ── 영상 카드 (추상 프레임 → 투표 → 정답) ─────────── */
+.story__card {
+  position: absolute;
+  /* 선택된 장소(--px, --py) 오른쪽 아래에 붙는다 */
+  left: calc(var(--px, 50%) + 22px);
+  top: calc(var(--py, 30%) - 12px);
+  width: clamp(200px, 34%, 290px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 장소에서 카드로 이어지는 짧은 선 */
+.story__card::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 12px;
+  width: 16px;
+  height: 1px;
+  background-color: var(--c-point);
+}
+
+.story__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--c-bg-sub);
+  border-radius: 10px;
+  background-color: var(--c-bg);
+}
+
+.story__noise {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.55;
+}
+
+/* 주사선 + 가장자리 어둡게 — 영상 화면처럼 */
+.story__frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(to bottom, rgba(17, 17, 17, 0.35) 0 1px, rgba(17, 17, 17, 0) 1px 3px),
+    radial-gradient(ellipse at center, rgba(17, 17, 17, 0) 55%, rgba(17, 17, 17, 0.8) 100%);
+  pointer-events: none;
+}
+
+.story__tag,
+.story__time {
+  position: absolute;
+  z-index: 1;
+  color: var(--c-text);
+  font-size: 10px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.12em;
+}
+
+.story__tag  { left: 10px; top: 8px; }
+.story__time { right: 10px; bottom: 10px; color: var(--c-text-sub); letter-spacing: 0.04em; }
+
+.story__progress {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--c-point);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.story__vote {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.story__chip {
+  flex: 1;
+  padding: 7px 0;
+  border: 1px solid var(--c-bg-sub);
+  border-radius: 999px;
+  color: var(--c-text-sub);
+  font-size: 12px;
+  text-align: center;
+  opacity: 0;
+}
+
+.story__answer {
+  margin-top: 10px;
+  color: var(--c-point);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  opacity: 0;
+}
+
+/* ── 범례 ───────────────────────────────────────── */
+.story__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: clamp(14px, 2vh, 22px);
+  color: var(--c-text-sub);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  opacity: 0;
+}
+
+.story__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.story__legend li::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.story__legend .is-real::before    { background-color: var(--story-real); }
+.story__legend .is-ai::before      { background-color: var(--story-ai); }
+.story__legend .is-neutral::before { background-color: var(--story-neutral); }
+
+/* 좁은 화면 — 지도 위, 글 아래. 카드는 지도 아래 흐름으로 */
+@media (max-width: 768px) {
+  .story__inner {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: clamp(20px, 3vh, 32px);
+  }
+  .story__stage { order: -1; }
+  .story__card {
+    position: static;
+    width: min(260px, 70%);
+    margin: 14px auto 0;
+  }
+  .story__card::before { display: none; }
+  .story__step { font-size: clamp(18px, 5vw, 22px); }
+}
+
+/* 연출 없이 보여줄 때 — 문장 넷을 차례로, 지도는 완성된 모습, 카드는 숨김 */
+.story.is-static {
+  height: auto;
+  padding-block: clamp(24px, 4vh, 48px);
+}
+.story.is-static .story__inner { padding-top: 0; }
+.story.is-static .story__count,
+.story.is-static .story__bar,
+.story.is-static .story__card { display: none; }
+.story.is-static .story__steps { display: block; }
+.story.is-static .story__step + .story__step { margin-top: 0.6em; }
+.story.is-static .story__legend { opacity: 1; }
+.story.is-static .story__pt[data-v="real"] { fill: var(--story-real); }
+.story.is-static .story__pt[data-v="ai"]   { fill: var(--story-ai); }
+
 /* ==========================================================================
    Works — 썸네일 그리드 (2단계에서 모달 연결)
    ========================================================================== */

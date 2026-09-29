@@ -197,6 +197,79 @@ function hangulSteps(text) {
 }
 
 /**
+ * About · Project 스토리의 점 세계지도를 그린다 (데이터: js/world-dots.js)
+ * 육지는 점들을 한 path 로 — 점 3천 개를 요소로 만들지 않아 가볍다.
+ * 장소 100곳은 각자 circle 로 두고, 최종 판단(실제/AI/중립)을 정해 둔다.
+ */
+(function () {
+  'use strict';
+
+  var story = document.querySelector('.story');
+  var data = window.WORLD_DOTS;
+  if (!story || !data) return;
+
+  var S = 10;                                   /* 격자 한 칸 (viewBox 단위) */
+  var W = data.cols * S, H = data.rows.length * S;
+  var NS = 'http://www.w3.org/2000/svg';
+  var el = function (tag, attrs) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  };
+
+  var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'presentation' });
+
+  /* 1. 육지 — 왼쪽부터 쓸어 드러내도록 clip 을 건다 */
+  var d = '';
+  data.rows.forEach(function (hex, r) {
+    for (var i = 0; i < hex.length; i++) {
+      var v = parseInt(hex[i], 16);
+      for (var b = 0; b < 4; b++) {
+        if (!(v & (8 >> b))) continue;
+        var x = (i * 4 + b) * S + S / 2 - 1.7, y = r * S + S / 2;
+        d += 'M' + x + ' ' + y + 'a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0-3.4 0';
+      }
+    }
+  });
+  var clip = el('clipPath', { id: 'story-sweep' });
+  clip.appendChild(el('rect', { x: 0, y: -S, width: W, height: H + 2 * S }));
+  var defs = el('defs', {});
+  defs.appendChild(clip);
+  svg.appendChild(defs);
+  var landG = el('g', { 'clip-path': 'url(#story-sweep)' });
+  landG.appendChild(el('path', { class: 'story__land', d: d }));
+  svg.appendChild(landG);
+
+  /* 2. 장소 — 최종 판단은 고정된 난수로(새로고침해도 같은 지도). 실제 약 4 : AI 약 3.5 : 중립 나머지 */
+  var seed = 7;
+  var rand = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  var ptsG = el('g', { class: 'story__pts' });
+  var project = function (lon, lat) {
+    return [(lon - data.lon0) / data.step * S, (data.lat0 - lat) / data.step * S];
+  };
+  data.places.forEach(function (pl, i) {
+    var p = project(pl[0], pl[1]);
+    var r = rand();
+    var v = i === 0 ? 'ai' : r < 0.42 ? 'real' : r < 0.78 ? 'ai' : 'neutral';
+    var c = el('circle', { class: 'story__pt' + (i === 0 ? ' is-pick' : ''), cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 4.4 });
+    c.setAttribute('data-v', v);
+    ptsG.appendChild(c);
+    if (i === 0) {
+      /* 선택되는 장소 — 퍼지는 고리 두 개, 카드가 여기 붙는다 */
+      for (var k = 0; k < 2; k++) ptsG.insertBefore(el('circle', { class: 'story__ring', cx: p[0], cy: p[1], r: 4 }), c);
+      var card = story.querySelector('.story__card');
+      if (card) {
+        card.style.setProperty('--px', (p[0] / W * 100) + '%');
+        card.style.setProperty('--py', (p[1] / H * 100) + '%');
+      }
+    }
+  });
+  svg.appendChild(ptsG);
+
+  story.querySelector('.story__map').appendChild(svg);
+})();
+
+/**
  * 스크롤 인터랙션 (GSAP + ScrollTrigger)
  * 절제된 페이드인 · 슬라이드업과 썸네일의 완만한 패럴랙스만 적용한다.
  */
@@ -210,6 +283,9 @@ function hangulSteps(text) {
   if (!window.gsap || !window.ScrollTrigger ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     for (var i = 0; i < items.length; i++) items[i].removeAttribute('data-reveal');
+    /* Project 스토리는 문장 넷과 완성된 지도만 */
+    var storyStill = document.querySelector('.story');
+    if (storyStill) storyStill.classList.add('is-static');
     /* 질문은 타이핑 없이, 첫 화면 바로 다음에 제 화면을 하나 차지하게 둔다.
        히어로 안에 두면 제목 아래로 흘러 서명과 겹친다. */
     var still = document.querySelector('.hero__ask');
@@ -350,6 +426,151 @@ function hangulSteps(text) {
           onUpdate: function () { type(Math.round(typing.n)); } }, 0.6)
       /* 다 쓴 문장을 잠깐 보여준 뒤 고정을 푼다 (화면 0.2) */
       .to({}, { duration: 0.2 }, 3.0);
+  }
+
+  /* About 첫 문단 — 스크롤에 따라 단어가 차례로 밝아진다 */
+  var lead = document.querySelector('.about__lead');
+  if (lead) {
+    var words = [];
+    Array.prototype.slice.call(lead.childNodes).forEach(function (node) {
+      if (node.nodeType === 1) { node.classList.add('about__word'); words.push(node); return; }
+      node.nodeValue.split(/(\s+)/).forEach(function (part) {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { lead.insertBefore(document.createTextNode(part), node); return; }
+        var w = document.createElement('span');
+        w.className = 'about__word';
+        w.textContent = part;
+        lead.insertBefore(w, node);
+        words.push(w);
+      });
+      lead.removeChild(node);
+    });
+    gsap.fromTo(words, { opacity: 0.2 }, {
+      opacity: 1, ease: 'none', stagger: 0.1,
+      scrollTrigger: { trigger: lead, start: 'top 85%', end: 'bottom 45%', scrub: 0.6 }
+    });
+  }
+
+  /* About · Project 스토리 — 고정한 채 네 단계. 시간 1 = 스크롤 화면 높이 1 */
+  var storyEl = document.querySelector('.story');
+  if (storyEl && storyEl.querySelector('.story__map svg')) {
+    var q = function (s) { return storyEl.querySelector(s); };
+    var qa = function (s) { return Array.prototype.slice.call(storyEl.querySelectorAll(s)); };
+    var stepEls = qa('.story__step'), barEls = qa('.story__bar i');
+    var num = q('.story__num'), sweep = q('#story-sweep rect');
+    var pts = qa('.story__pt'), pick = q('.story__pt.is-pick');
+    var others = pts.filter(function (p) { return p !== pick; });
+    var card = q('.story__card'), chips = qa('.story__chip'), answerChip = q('.story__chip.is-answer');
+    var progressBar = q('.story__progress'), timeEl = q('.story__time'), answer = q('.story__answer');
+    var legend = q('.story__legend'), ptsG = q('.story__pts');
+    var mapW = parseFloat(q('.story__map svg').getAttribute('viewBox').split(' ')[2]);
+    var cx = function (p) { return parseFloat(p.getAttribute('cx')); };
+    var COLOR = { real: '#F5F5F5', ai: '#C3BDFF', neutral: '#8D8D8D' };
+
+    /* 들어오는 동안 — 첫 문장과 육지를 왼쪽부터 쓸어 드러낸다 */
+    gsap.set(stepEls, { opacity: 0, y: 24 });
+    /* SVG 는 기본 변형 기준이 상자 왼쪽 위라, 점이 제자리에서 커지도록 가운데로 */
+    gsap.set(pts, { scale: 0, transformOrigin: '50% 50%' });
+    var intro2 = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: { trigger: storyEl, start: 'top 85%', end: 'top top', scrub: 0.6 }
+    });
+    intro2
+      .fromTo(sweep, { attr: { width: 0 } }, { attr: { width: mapW }, duration: 1 }, 0)
+      .to(stepEls[0], { opacity: 1, y: 0, duration: 0.4, ease: 'power1.out' }, 0.5);
+
+    /* 진행 막대 한 칸을 채우는 트윈 설정 (매번 새 객체) */
+    var fill = function () { return { '--fill': '100%', duration: 1, ease: 'none' }; };
+    var video = { t: 0 };
+    var active = -1;
+
+    var tl = gsap.timeline({
+      defaults: { ease: 'none' },
+      onUpdate: function () {
+        var t = this.time();
+        var idx = Math.max(0, Math.min(3, Math.floor(t)));
+        if (idx !== active) { active = idx; num.textContent = '0' + (idx + 1); }
+        storyEl.classList.toggle('is-picking', t >= 1.05 && t < 3);
+      },
+      scrollTrigger: {
+        trigger: storyEl,
+        start: 'top top',
+        end: '+=400%',
+        pin: true,
+        scrub: 0.6,
+        anticipatePin: 1
+      }
+    });
+
+    /* 단계 문장 바꾸기 — 같은 문장을 여러 트윈이 다루므로 만들 때 바로 그리지 않게(immediateRender) */
+    var swap = function (from, to, at) {
+      tl.fromTo(stepEls[from], { opacity: 1, y: 0 },
+          { opacity: 0, y: -24, duration: 0.12, ease: 'power1.in', immediateRender: false }, at - 0.12)
+        .fromTo(stepEls[to], { opacity: 0, y: 24 },
+          { opacity: 1, y: 0, duration: 0.14, ease: 'power1.out', immediateRender: false }, at);
+    };
+
+    /* 1. 장소 100곳이 서쪽부터 하나씩 켜진다 (0 → 1) */
+    var byLon = pts.slice().sort(function (a, b) { return cx(a) - cx(b); });
+    tl.fromTo(byLon, { scale: 0 }, { scale: 1, duration: 0.1, ease: 'back.out(3)', stagger: 0.006 }, 0.05)
+      .fromTo(barEls[0], { '--fill': '0%' }, fill(), 0);
+
+    /* 2. 한 곳을 골라 짧은 영상 (1 → 2) */
+    swap(0, 1, 1);
+    tl.to(others, { opacity: 0.3, duration: 0.15 }, 1)
+      .to(pick, { scale: 2.2, duration: 0.15, ease: 'power2.out' }, 1)
+      .fromTo(card, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.15, ease: 'power2.out' }, 1.1)
+      .fromTo(progressBar, { scaleX: 0 }, { scaleX: 1, duration: 0.7 }, 1.25)
+      .fromTo(video, { t: 0 }, { t: 8, duration: 0.7, onUpdate: function () {
+        timeEl.textContent = '00:0' + Math.min(8, Math.floor(video.t)) + ' / 00:08';
+      } }, 1.25)
+      .fromTo(barEls[1], { '--fill': '0%' }, fill(), 1);
+
+    /* 3. 투표하고 정답 확인 (2 → 3) */
+    swap(1, 2, 2);
+    tl.fromTo(chips, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.1, stagger: 0.05 }, 2.05)
+      .to(answerChip, { borderColor: '#C3BDFF', color: '#C3BDFF', duration: 0.06 }, 2.4)
+      .to(answerChip, { backgroundColor: '#C3BDFF', color: '#111111', duration: 0.08 }, 2.65)
+      .fromTo(answer, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.1 }, 2.68)
+      .fromTo(barEls[2], { '--fill': '0%' }, fill(), 2);
+
+    /* 4. 판단이 쌓이며 지도가 바뀐다 (3 → 4) — 서쪽에서 동쪽으로 물결처럼 */
+    swap(2, 3, 3);
+    tl.to(card, { opacity: 0, y: -10, duration: 0.12 }, 3)
+      .to(others, { opacity: 1, duration: 0.12 }, 3.02)
+      .to(pick, { scale: 1, duration: 0.12 }, 3.02);
+    byLon.forEach(function (p, i) {
+      var v = p.getAttribute('data-v');
+      var at = 3.12 + i * 0.0065;
+      if (v === 'neutral') return;
+      tl.to(p, { fill: COLOR[v], duration: 0.06 }, at)
+        .to(p, { keyframes: [{ scale: 1.7, duration: 0.03 }, { scale: 1, duration: 0.05 }] }, at);
+    });
+    tl.fromTo(ptsG, { filter: 'drop-shadow(0px 0px 4px rgba(195, 189, 255, 0))' },
+        { filter: 'drop-shadow(0px 0px 4px rgba(195, 189, 255, 0.55))', duration: 0.3 }, 3.5)
+      .fromTo(legend, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.15 }, 3.8)
+      .fromTo(barEls[3], { '--fill': '0%' }, fill(), 3)
+      .to({}, { duration: 0 }, 4);
+
+    /* 영상 프레임의 지글거림 — 카드가 보일 때만 돌린다 */
+    var noise = q('.story__noise'), ctx = noise.getContext('2d');
+    var img = ctx.createImageData(noise.width, noise.height), last = 0, running = false;
+    var grain = function (now) {
+      if (!storyEl.classList.contains('is-picking')) { running = false; return; }
+      if (now - last > 50) {
+        last = now;
+        for (var i = 0; i < img.data.length; i += 4) {
+          var g = 20 + Math.random() * 120;
+          img.data[i] = img.data[i + 1] = img.data[i + 2] = g;
+          img.data[i + 3] = 255;
+        }
+        ctx.putImageData(img, 0, 0);
+      }
+      requestAnimationFrame(grain);
+    };
+    new MutationObserver(function () {
+      if (storyEl.classList.contains('is-picking') && !running) { running = true; requestAnimationFrame(grain); }
+    }).observe(storyEl, { attributes: true, attributeFilter: ['class'] });
   }
 
   /* 각 섹션 — 화면에 들어올 때 순차 노출 */

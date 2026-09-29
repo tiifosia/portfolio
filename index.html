@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <!-- ?v= 는 캐시 무효화용 — CSS · JS 를 고칠 때마다 올린다. 안 올리면 미리보기/배포에서
        새 HTML 에 예전 CSS 가 섞여 보인다(실제로 발생). -->
-  <link rel="stylesheet" href="css/style.css?v=20260929-4">
+  <link rel="stylesheet" href="css/style.css?v=20260929-5">
 </head>
 <body>
 
@@ -93,15 +93,53 @@
       <div class="container">
         <span class="section__label" data-reveal>About</span>
         <h2 class="section__title about__title" data-reveal>Project</h2>
-        <p class="about__desc" data-reveal>
-          <span class="accent">Generated World</span>는 세계 곳곳의 장소를 촬영한 실제 영상과
+        <p class="about__desc about__lead" data-reveal>
+          <span class="accent about__name">Generated World</span>는 세계 곳곳의 장소를 촬영한 실제 영상과
           AI가 생성한 영상을 한데 섞어, 관람객이 이미지의 진위를 판단하도록 하는 인터랙티브 작품입니다.
         </p>
-        <p class="about__desc" data-reveal>
-          세계지도 위 약 100개의 장소가 점으로 표시되고, 관람객은 원하는 장소를 선택해 짧은 영상을 확인합니다.
-          영상이 실제 촬영된 것인지 AI가 생성한 것인지, 혹은 모르겠는지 투표한 뒤 정답을 확인합니다.
-          관람객의 투표가 누적될수록 처음에는 모든 장소가 중립 상태였던 세계지도가 사람들의 판단에 따라 변화합니다.
-        </p>
+
+        <!-- 작품 진행 방식 — 스크롤하면 고정된 채 네 단계로 점 세계지도가 바뀐다.
+             지도는 js/world-dots.js 데이터로 js 가 그린다. 연출을 못 쓰면 문장 네 개와 완성된 지도만 보인다. -->
+        <div class="story">
+          <div class="story__inner">
+            <div class="story__text">
+              <p class="story__count" aria-hidden="true"><span class="story__num">01</span> / 04</p>
+              <ol class="story__steps">
+                <li class="story__step">세계지도 위 <span class="accent">약 100개의 장소</span>가 점으로 표시되고,</li>
+                <li class="story__step">관람객은 원하는 장소를 선택해 <span class="accent">짧은 영상</span>을 확인합니다.</li>
+                <li class="story__step">영상이 <span class="accent">실제 촬영된 것인지 AI가 생성한 것인지</span>, 혹은 모르겠는지 투표한 뒤 정답을 확인합니다.</li>
+                <li class="story__step">관람객의 투표가 누적될수록 처음에는 모든 장소가 중립 상태였던 세계지도가 <span class="accent">사람들의 판단에 따라 변화</span>합니다.</li>
+              </ol>
+              <div class="story__bar" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            </div>
+
+            <div class="story__stage" aria-hidden="true">
+              <div class="story__map"></div>
+
+              <!-- 선택한 장소의 짧은 영상(추상 프레임) → 투표 → 정답 -->
+              <div class="story__card">
+                <div class="story__frame">
+                  <canvas class="story__noise" width="96" height="54"></canvas>
+                  <span class="story__tag">VIDEO</span>
+                  <span class="story__time">00:00 / 00:08</span>
+                  <i class="story__progress"></i>
+                </div>
+                <div class="story__vote">
+                  <span class="story__chip">실제</span>
+                  <span class="story__chip is-answer">AI</span>
+                  <span class="story__chip">모르겠음</span>
+                </div>
+                <p class="story__answer">정답 · AI가 생성한 영상</p>
+              </div>
+
+              <ul class="story__legend">
+                <li class="is-real">실제로 판단</li>
+                <li class="is-ai">AI로 판단</li>
+                <li class="is-neutral">중립</li>
+              </ul>
+            </div>
+          </div>
+        </div>
         <h2 class="section__title about__title about__title--next" data-reveal>Members</h2>
         <ul class="about__members">
           <li data-reveal>류주영 Ryu Ju Young</li>
@@ -185,6 +223,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
-  <script src="js/main.js?v=20260929-4"></script>
+  <script src="js/world-dots.js?v=20260929-5"></script>
+  <script src="js/main.js?v=20260929-5"></script>
 </body>
 </html>
