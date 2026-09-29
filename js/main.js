@@ -296,13 +296,13 @@ function hangulSteps(text) {
     var sig = document.querySelector('.signature__video');
     var typing = { n: 0 };
 
-    /* 타임라인의 시간 1 = 스크롤 화면 높이 1 (전체 1.4 → 고정 구간 140%) */
+    /* 타임라인의 시간 1 = 스크롤 화면 높이 1 (전체 3.2 → 고정 구간 320%) */
     var intro = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
         trigger: heroEl,
         start: 'top top',
-        end: '+=140%',
+        end: '+=320%',
         pin: true,
         scrub: 0.6,
         anticipatePin: 1
@@ -317,12 +317,12 @@ function hangulSteps(text) {
     intro
       /* 2. 빈 화면에 커서가 나타나고 (화면 0.12) */
       .fromTo(ask, { opacity: 0 }, { opacity: 1, duration: 0.12 }, 0.48)
-      /* 3. 스크롤한 만큼 쓰인다 (화면 0.6 — 한 타에 약 1/87 화면) */
+      /* 3. 스크롤한 만큼 천천히 쓰인다 (화면 2.4 — 한 타에 약 1/22 화면) */
       .fromTo(typing, { n: 0 },
-        { n: steps.length, duration: 0.6,
+        { n: steps.length, duration: 2.4,
           onUpdate: function () { type(Math.round(typing.n)); } }, 0.6)
       /* 다 쓴 문장을 잠깐 보여준 뒤 고정을 푼다 (화면 0.2) */
-      .to({}, { duration: 0.2 }, 1.2);
+      .to({}, { duration: 0.2 }, 3.0);
   }
 
   /* 각 섹션 — 화면에 들어올 때 순차 노출 */
