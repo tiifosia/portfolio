@@ -1,4 +1,4 @@
-# 유튜브 채널에 새 영상(일부 공개 · 공개)이 올라오면 Works 에 'DAY N' 카드를 붙여
+# 유튜브 채널 AI영상팀(UCP9TZil5EtUoU3-BJULSpdg)에 새 영상(일부 공개 · 공개)이 올라오면 Works 에 'DAY N' 카드를 붙여
 # 공개 사이트(이 브랜치)에 바로 반영한다. 한 시간마다 확인하고,
 # Actions 탭 → YouTube → Works → Run workflow 로 바로 돌릴 수도 있다.
 # 필요한 저장소 비밀값: YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN

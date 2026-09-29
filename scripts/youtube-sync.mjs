@@ -1,8 +1,9 @@
 /**
- * 유튜브 채널에 새로 올린 영상을 Works 에 'DAY N' 카드로 붙인다.
+ * 유튜브 채널 AI영상팀(@AI영상팀)에 새로 올린 영상을 Works 에 'DAY N' 카드로 붙인다.
  * .github/workflows/youtube-sync.yml 이 한 시간마다 실행한다(로컬에서 직접 돌려도 된다).
  *
  * - 채널 주인 계정으로 인증해 업로드 목록을 읽는다. 일부 공개 영상은 주인만 목록에서 볼 수 있다.
+ *   인증한 채널이 CHANNEL_ID 가 아니면 아무것도 붙이지 않고 멈춘다.
  * - START_AFTER(손으로 넣은 마지막 영상) 뒤에 올라온 영상만 본다 — 채널의 옛 영상은 건드리지 않는다.
  * - 일부 공개 · 공개이고 처리가 끝난 영상만 넣는다. 비공개는 방문자가 재생할 수 없어 건너뛰고,
  *   나중에 일부 공개로 바꾸면 그다음 실행 때 들어간다.
@@ -13,7 +14,8 @@
  */
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 
-const START_AFTER = 'epA7yq1SJAA';   /* DAY 2 */
+const CHANNEL_ID = 'UCP9TZil5EtUoU3-BJULSpdg';   /* AI영상팀 */
+const START_AFTER = 'epA7yq1SJAA';                /* DAY 2 */
 const PAGE = new URL('../index.html', import.meta.url);
 const MARK = /^([ \t]*)<!-- works:auto\b.*$/m;
 
@@ -45,10 +47,13 @@ const api = async (path, params) => {
   return r.json();
 };
 
-const channel = await api('channels', { part: 'contentDetails,snippet', mine: 'true' });
-const uploads = channel.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
-if (!uploads) throw new Error('인증한 계정에 YouTube 채널이 없습니다 — 토큰을 받을 때 채널(브랜드 계정)을 골랐는지 확인');
-console.log('채널:', channel.items[0].snippet.title);
+const me = (await api('channels', { part: 'contentDetails,snippet', mine: 'true' })).items?.[0];
+if (!me) throw new Error('인증한 계정에 YouTube 채널이 없습니다 — 토큰을 받을 때 AI영상팀 채널을 골랐는지 확인');
+if (me.id !== CHANNEL_ID) {
+  throw new Error(`인증한 채널이 AI영상팀이 아닙니다(${me.snippet.title}, ${me.id}) — 토큰을 받을 때 AI영상팀 채널을 골라 다시 받으세요`);
+}
+const uploads = me.contentDetails.relatedPlaylists.uploads;
+console.log('채널:', me.snippet.title, me.id);
 
 /* 업로드 목록은 최신순 — 기준 영상을 만날 때까지 넘기며 그보다 새 영상을 모은다 */
 const newer = [];
