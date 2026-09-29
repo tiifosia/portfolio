@@ -707,6 +707,28 @@ a:hover { color: var(--c-point); }
   letter-spacing: 0.02em;
 }
 
+/* 상세보기 — 연도 아래 작은 글자 링크. 기본은 보조 색, 호버 시 포인트 컬러 */
+.work__more {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(195, 189, 255, 0.35);
+  background: none;
+  color: var(--c-text-sub);
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-regular);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.35s ease, border-color 0.35s ease;
+}
+
+.work__more:hover {
+  color: var(--c-point);
+  border-bottom-color: var(--c-point);
+}
+
 /* ==========================================================================
    호버 확대
    transition 은 기본 상태에 선언해야 마우스를 뗄 때도 같은 곡선·속도로
@@ -816,6 +838,65 @@ a:hover { color: var(--c-point); }
 
 .modal__close:hover::before,
 .modal__close:hover::after { background-color: var(--c-point); }
+
+/* 글 모드(작품 상세) — 16:9 영상 틀 대신 읽기 좋은 폭의 패널, 길면 안에서 스크롤 */
+.modal.is-text .modal__dialog {
+  width: min(760px, 100%);
+}
+
+.modal.is-text .modal__frame {
+  aspect-ratio: auto;
+  max-height: calc(100vh - 2 * var(--gutter) - 56px);
+  max-height: calc(100svh - 2 * var(--gutter) - 56px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(28px, 4vw, 52px);
+  border: 1px solid var(--c-bg-sub);
+  border-radius: 20px;
+  background-color: var(--c-bg);
+}
+
+.detail__title {
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+/* 사용 모델 · 길이 — 항목명은 보조 색, 값은 본문 색 */
+.detail__specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 20px 0 0;
+  font-size: 15px;
+}
+
+.detail__specs div { display: flex; gap: 12px; }
+.detail__specs dt { color: var(--c-text-sub); }
+.detail__specs dd { margin: 0; font-weight: var(--fw-medium); }
+
+/* Prompt · Negative prompt — 섹션 라벨과 같은 모양 */
+.detail__label {
+  margin: clamp(32px, 4vw, 44px) 0 0;
+  padding-top: clamp(24px, 3vw, 32px);
+  border-top: 1px solid var(--c-line);
+  color: var(--c-point);
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.detail__text {
+  margin-top: 14px;
+  color: var(--c-text-sub);
+  font-size: clamp(15px, 1.2vw, 17px);
+  line-height: 1.8;
+  word-break: keep-all;
+}
+
+.detail__text p + p { margin-top: 0.8em; }
 
 /* ==========================================================================
    푸터

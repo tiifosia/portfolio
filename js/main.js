@@ -58,8 +58,9 @@
 })();
 
 /**
- * 유튜브 임베드 모달
- * 썸네일 클릭 시 iframe 을 생성하고, 닫을 때 제거해 재생을 완전히 멈춘다.
+ * 모달 — 영상 재생과 작품 상세(글)를 같은 창으로 띄운다.
+ * 영상은 iframe 을 만들고 닫을 때 제거해 재생을 완전히 멈춘다.
+ * 상세는 <template> 내용을 넣고, 글이 긴 창 모양(is-text)으로 바꾼다.
  */
 (function () {
   'use strict';
@@ -68,8 +69,10 @@
   var frame = document.getElementById('modal-frame');
   if (!modal || !frame) return;
 
+  var dialog = modal.querySelector('.modal__dialog');
   var closeBtn = modal.querySelector('.modal__close');
   var lastTrigger = null;
+  var cleanup = null;
 
   /* 모달이 열린 동안 배경 스크롤을 막고, 스크롤바 폭만큼 보정해 화면 밀림을 없앤다 */
   function lockScroll(on) {
@@ -78,12 +81,12 @@
     document.body.style.paddingRight = on && gap > 0 ? gap + 'px' : '';
   }
 
-  function open(videoId, trigger) {
+  function show(trigger, label, isText) {
+    clearTimeout(cleanup);
     lastTrigger = trigger;
-    frame.innerHTML =
-      '<iframe src="https://www.youtube-nocookie.com/embed/' + videoId +
-      '?autoplay=1&rel=0&playsinline=1" title="포트폴리오 영상"' +
-      ' allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+    dialog.setAttribute('aria-label', label);
+    modal.classList.toggle('is-text', isText);
+    frame.scrollTop = 0;
     lockScroll(true);
     modal.classList.add('is-open');
     /* visibility 가 반영되기 전에는 포커스가 들어가지 않으므로 스타일 계산을 강제한다 */
@@ -91,20 +94,42 @@
     closeBtn.focus();
   }
 
+  function openVideo(videoId, trigger) {
+    frame.innerHTML =
+      '<iframe src="https://www.youtube-nocookie.com/embed/' + videoId +
+      '?autoplay=1&rel=0&playsinline=1" title="포트폴리오 영상"' +
+      ' allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+    show(trigger, '영상 재생', false);
+  }
+
+  function openDetail(id, trigger) {
+    var tpl = document.getElementById(id);
+    if (!tpl) return;
+    frame.innerHTML = '';
+    frame.appendChild(tpl.content.cloneNode(true));
+    var title = frame.querySelector('.detail__title');
+    show(trigger, (title ? title.textContent + ' ' : '') + '상세 정보', true);
+  }
+
   function close() {
     if (!modal.classList.contains('is-open')) return;
     modal.classList.remove('is-open');
-    frame.innerHTML = '';
     lockScroll(false);
+    if (modal.classList.contains('is-text')) {
+      /* 글은 사라지는 페이드가 끝난 뒤에 비운다 — 바로 비우면 빈 창이 잠깐 보인다 */
+      cleanup = setTimeout(function () { frame.innerHTML = ''; modal.classList.remove('is-text'); }, 400);
+    } else {
+      /* 영상은 바로 지워 소리까지 즉시 멈춘다 */
+      frame.innerHTML = '';
+    }
     if (lastTrigger) lastTrigger.focus();
   }
 
   document.addEventListener('click', function (e) {
-    var trigger = e.target.closest('[data-video-id]');
-    if (trigger) {
-      open(trigger.dataset.videoId, trigger);
-      return;
-    }
+    var video = e.target.closest('[data-video-id]');
+    if (video) { openVideo(video.dataset.videoId, video); return; }
+    var detail = e.target.closest('[data-detail]');
+    if (detail) { openDetail(detail.dataset.detail, detail); return; }
     if (e.target.closest('[data-close]')) close();
   });
 

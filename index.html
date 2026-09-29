@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <!-- ?v= 는 캐시 무효화용 — CSS · JS 를 고칠 때마다 올린다. 안 올리면 미리보기/배포에서
        새 HTML 에 예전 CSS 가 섞여 보인다(실제로 발생). -->
-  <link rel="stylesheet" href="css/style.css?v=20260929-3">
+  <link rel="stylesheet" href="css/style.css?v=20260929-4">
 </head>
 <body>
 
@@ -132,6 +132,7 @@
             </button>
             <h3 class="work__title">DAY 1</h3>
             <p class="work__meta">2026</p>
+            <button class="work__more" type="button" data-detail="detail-day1">상세보기</button>
           </li>
         </ul>
       </div>
@@ -146,6 +147,34 @@
     </div>
   </footer>
 
+  <!-- 작품 상세 — '상세보기'를 누르면 이 내용이 모달에 들어간다. 글은 여기서 고치면 된다. -->
+  <template id="detail-day1">
+    <article class="detail">
+      <h3 class="detail__title">DAY 1</h3>
+      <dl class="detail__specs">
+        <div><dt>사용 모델</dt><dd>wan</dd></div>
+        <div><dt>길이</dt><dd>8초</dd></div>
+      </dl>
+
+      <h4 class="detail__label">Prompt</h4>
+      <div class="detail__text">
+        <p>프랑스의 가상의 소도시 Velin의 평범한 주택가를 촬영한 실제 여행 영상처럼 보이는 장면.</p>
+        <p>초가을 오후, 흐린 날씨. 오래된 석조 건물과 베이지색 건물, 창문 셔터, 작은 발코니가 있는 좁은 골목길.
+           길가에는 소형 자동차와 자전거가 자연스럽게 놓여 있고, 멀리 몇 명의 사람들이 걸어간다.</p>
+        <p>카메라는 사람의 눈높이에서 천천히 골목을 걸으며 촬영한다. 약간의 자연스러운 손떨림이 있는 핸드헬드 촬영.
+           특별한 연출이나 영화적인 구도 없이 누군가 실제로 이곳을 지나가며 촬영한 평범한 영상처럼 보인다.</p>
+        <p>자연스러운 색감과 조명, 현실적인 건물과 거리의 흔적. 관광 홍보 영상이 아닌 일반적인 거리 기록 영상.</p>
+        <p>8초, 16:9, 사실적인 영상.</p>
+      </div>
+
+      <h4 class="detail__label">Negative prompt</h4>
+      <div class="detail__text">
+        <p>비현실적인 건물, 판타지, 영화 같은 조명, 과도한 색감, 드론 촬영, 과도한 아웃포커싱, 완벽하게 정돈된 거리,
+           왜곡된 건물, 비정상적인 사람, 읽을 수 없는 글자, CGI 느낌, 과도하게 아름다운 풍경.</p>
+      </div>
+    </article>
+  </template>
+
   <div class="modal" id="modal">
     <div class="modal__backdrop" data-close></div>
     <div class="modal__dialog" role="dialog" aria-modal="true" aria-label="영상 재생">
@@ -156,6 +185,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
-  <script src="js/main.js?v=20260929-3"></script>
+  <script src="js/main.js?v=20260929-4"></script>
 </body>
 </html>
