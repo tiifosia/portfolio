@@ -296,12 +296,13 @@ function hangulSteps(text) {
     var sig = document.querySelector('.signature__video');
     var typing = { n: 0 };
 
+    /* 타임라인의 시간 1 = 스크롤 화면 높이 1 (전체 1.4 → 고정 구간 140%) */
     var intro = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
         trigger: heroEl,
         start: 'top top',
-        end: '+=200%',
+        end: '+=140%',
         pin: true,
         scrub: 0.6,
         anticipatePin: 1
@@ -309,19 +310,19 @@ function hangulSteps(text) {
     });
 
     intro
-      /* 1. 제목과 서명이 위로 살짝 뜨며 물러난다 */
+      /* 1. 제목과 서명이 위로 살짝 뜨며 물러난다 (화면 0.48) */
       .fromTo(lead, { opacity: 1, y: 0 },
-        { opacity: 0, y: -40, duration: 0.24, ease: 'power1.in' }, 0);
-    if (sig) intro.fromTo(sig, { opacity: 1 }, { opacity: 0, duration: 0.2 }, 0);
+        { opacity: 0, y: -40, duration: 0.48, ease: 'power1.in' }, 0);
+    if (sig) intro.fromTo(sig, { opacity: 1 }, { opacity: 0, duration: 0.4 }, 0);
     intro
-      /* 2. 빈 화면에 커서가 나타나고 */
-      .fromTo(ask, { opacity: 0 }, { opacity: 1, duration: 0.06 }, 0.24)
-      /* 3. 스크롤한 만큼 쓰인다 */
+      /* 2. 빈 화면에 커서가 나타나고 (화면 0.12) */
+      .fromTo(ask, { opacity: 0 }, { opacity: 1, duration: 0.12 }, 0.48)
+      /* 3. 스크롤한 만큼 쓰인다 (화면 0.6 — 한 타에 약 1/87 화면) */
       .fromTo(typing, { n: 0 },
         { n: steps.length, duration: 0.6,
-          onUpdate: function () { type(Math.round(typing.n)); } }, 0.3)
-      /* 다 쓴 문장을 잠깐 보여준 뒤 고정을 푼다 */
-      .to({}, { duration: 0.1 }, 0.9);
+          onUpdate: function () { type(Math.round(typing.n)); } }, 0.6)
+      /* 다 쓴 문장을 잠깐 보여준 뒤 고정을 푼다 (화면 0.2) */
+      .to({}, { duration: 0.2 }, 1.2);
   }
 
   /* 각 섹션 — 화면에 들어올 때 순차 노출 */
