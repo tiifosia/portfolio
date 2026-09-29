@@ -267,6 +267,15 @@ function hangulSteps(text) {
   svg.appendChild(ptsG);
 
   story.querySelector('.story__map').appendChild(svg);
+
+  /* 좁은 화면에서는 지도가 작아 점이 2px 도 안 된다 — 장소 점만 키운다 */
+  var narrow = window.matchMedia('(max-width: 768px)');
+  var sizePts = function () {
+    var r = narrow.matches ? 8 : 4.4;
+    ptsG.querySelectorAll('circle').forEach(function (c) { c.setAttribute('r', c.classList.contains('story__ring') ? r * 0.9 : r); });
+  };
+  sizePts();
+  if (narrow.addEventListener) narrow.addEventListener('change', sizePts);
 })();
 
 /**
@@ -467,44 +476,44 @@ function hangulSteps(text) {
     var cx = function (p) { return parseFloat(p.getAttribute('cx')); };
     var COLOR = { real: '#F5F5F5', ai: '#C3BDFF', neutral: '#8D8D8D' };
 
-    /* 들어오는 동안 — 첫 문장과 육지를 왼쪽부터 쓸어 드러낸다 */
     gsap.set(stepEls, { opacity: 0, y: 24 });
     /* SVG 는 기본 변형 기준이 상자 왼쪽 위라, 점이 제자리에서 커지도록 가운데로 */
     gsap.set(pts, { scale: 0, transformOrigin: '50% 50%' });
-    var intro2 = gsap.timeline({
-      defaults: { ease: 'none' },
-      scrollTrigger: { trigger: storyEl, start: 'top 85%', end: 'top top', scrub: 0.6 }
-    });
-    intro2
-      .fromTo(sweep, { attr: { width: 0 } }, { attr: { width: mapW }, duration: 1 }, 0)
-      .to(stepEls[0], { opacity: 1, y: 0, duration: 0.4, ease: 'power1.out' }, 0.5);
 
     /* 진행 막대 한 칸을 채우는 트윈 설정 (매번 새 객체) */
     var fill = function () { return { '--fill': '100%', duration: 1, ease: 'none' }; };
     var video = { t: 0 };
     var active = -1;
 
+    /* 한 요소는 반드시 한 타임라인만 움직인다.
+       들어오는 구간과 고정 구간을 따로 두었더니, 스크롤을 빠르게 왕복할 때
+       늦게 따라오는 쪽(scrub)이 나중에 첫 문장을 다시 켜서 문장이 겹쳤다(실측).
+       → 고정은 별도 트리거로, 연출은 들어오는 구간부터 끝까지 타임라인 하나로. */
+    var PRE = 0.85;                     /* 화면 85% 지점 → 맨 위까지(화면 0.85) */
+    ScrollTrigger.create({ trigger: storyEl, start: 'top top', end: '+=400%', pin: true, anticipatePin: 1 });
+
     var tl = gsap.timeline({
       defaults: { ease: 'none' },
       onUpdate: function () {
-        var t = this.time();
+        var t = this.time() - PRE;
         var idx = Math.max(0, Math.min(3, Math.floor(t)));
         if (idx !== active) { active = idx; num.textContent = '0' + (idx + 1); }
         storyEl.classList.toggle('is-picking', t >= 1.05 && t < 3);
       },
-      scrollTrigger: {
-        trigger: storyEl,
-        start: 'top top',
-        end: '+=400%',
-        pin: true,
-        scrub: 0.6,
-        anticipatePin: 1
-      }
+      scrollTrigger: { trigger: storyEl, start: 'top 85%', end: '+=485%', scrub: 0.6 }
     });
+
+    /* 들어오는 동안 — 육지를 왼쪽부터 쓸어 드러내고 첫 문장이 떠오른다 */
+    tl.fromTo(sweep, { attr: { width: 0 } }, { attr: { width: mapW }, duration: PRE }, 0)
+      .fromTo(stepEls[0], { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.34, ease: 'power1.out', immediateRender: false }, PRE * 0.5);
+
+    /* 고정된 뒤의 네 단계 — 시간 1 = 스크롤 화면 높이 1, 전체 4 */
+    var seq = gsap.timeline({ defaults: { ease: 'none' } });
 
     /* 단계 문장 바꾸기 — 같은 문장을 여러 트윈이 다루므로 만들 때 바로 그리지 않게(immediateRender) */
     var swap = function (from, to, at) {
-      tl.fromTo(stepEls[from], { opacity: 1, y: 0 },
+      seq.fromTo(stepEls[from], { opacity: 1, y: 0 },
           { opacity: 0, y: -24, duration: 0.12, ease: 'power1.in', immediateRender: false }, at - 0.12)
         .fromTo(stepEls[to], { opacity: 0, y: 24 },
           { opacity: 1, y: 0, duration: 0.14, ease: 'power1.out', immediateRender: false }, at);
@@ -512,12 +521,12 @@ function hangulSteps(text) {
 
     /* 1. 장소 100곳이 서쪽부터 하나씩 켜진다 (0 → 1) */
     var byLon = pts.slice().sort(function (a, b) { return cx(a) - cx(b); });
-    tl.fromTo(byLon, { scale: 0 }, { scale: 1, duration: 0.1, ease: 'back.out(3)', stagger: 0.006 }, 0.05)
+    seq.fromTo(byLon, { scale: 0 }, { scale: 1, duration: 0.1, ease: 'back.out(3)', stagger: 0.006 }, 0.05)
       .fromTo(barEls[0], { '--fill': '0%' }, fill(), 0);
 
     /* 2. 한 곳을 골라 짧은 영상 (1 → 2) */
     swap(0, 1, 1);
-    tl.to(others, { opacity: 0.3, duration: 0.15 }, 1)
+    seq.to(others, { opacity: 0.3, duration: 0.15 }, 1)
       .to(pick, { scale: 2.2, duration: 0.15, ease: 'power2.out' }, 1)
       .fromTo(card, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.15, ease: 'power2.out' }, 1.1)
       .fromTo(progressBar, { scaleX: 0 }, { scaleX: 1, duration: 0.7 }, 1.25)
@@ -528,7 +537,7 @@ function hangulSteps(text) {
 
     /* 3. 투표하고 정답 확인 (2 → 3) */
     swap(1, 2, 2);
-    tl.fromTo(chips, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.1, stagger: 0.05 }, 2.05)
+    seq.fromTo(chips, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.1, stagger: 0.05 }, 2.05)
       .to(answerChip, { borderColor: '#C3BDFF', color: '#C3BDFF', duration: 0.06 }, 2.4)
       .to(answerChip, { backgroundColor: '#C3BDFF', color: '#111111', duration: 0.08 }, 2.65)
       .fromTo(answer, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: 0.1 }, 2.68)
@@ -536,21 +545,23 @@ function hangulSteps(text) {
 
     /* 4. 판단이 쌓이며 지도가 바뀐다 (3 → 4) — 서쪽에서 동쪽으로 물결처럼 */
     swap(2, 3, 3);
-    tl.to(card, { opacity: 0, y: -10, duration: 0.12 }, 3)
+    seq.to(card, { opacity: 0, y: -10, duration: 0.12 }, 3)
       .to(others, { opacity: 1, duration: 0.12 }, 3.02)
       .to(pick, { scale: 1, duration: 0.12 }, 3.02);
     byLon.forEach(function (p, i) {
       var v = p.getAttribute('data-v');
       var at = 3.12 + i * 0.0065;
       if (v === 'neutral') return;
-      tl.to(p, { fill: COLOR[v], duration: 0.06 }, at)
+      seq.to(p, { fill: COLOR[v], duration: 0.06 }, at)
         .to(p, { keyframes: [{ scale: 1.7, duration: 0.03 }, { scale: 1, duration: 0.05 }] }, at);
     });
-    tl.fromTo(ptsG, { filter: 'drop-shadow(0px 0px 4px rgba(195, 189, 255, 0))' },
+    seq.fromTo(ptsG, { filter: 'drop-shadow(0px 0px 4px rgba(195, 189, 255, 0))' },
         { filter: 'drop-shadow(0px 0px 4px rgba(195, 189, 255, 0.55))', duration: 0.3 }, 3.5)
       .fromTo(legend, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.15 }, 3.8)
       .fromTo(barEls[3], { '--fill': '0%' }, fill(), 3)
       .to({}, { duration: 0 }, 4);
+
+    tl.add(seq, PRE);
 
     /* 영상 프레임의 지글거림 — 카드가 보일 때만 돌린다 */
     var noise = q('.story__noise'), ctx = noise.getContext('2d');
