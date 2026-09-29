@@ -960,11 +960,12 @@ a:hover { color: var(--c-point); }
   transition: opacity 0.45s ease;
 }
 
-.work:hover .work__thumb img { opacity: 0.68; }
+/* 썸네일 반응은 영상 이미지 위에 있을 때만 — Details 에 올렸을 때는 썸네일이 가만히 있는다 */
+.work__trigger:hover .work__thumb img { opacity: 0.68; }
 
-.work:hover .work__thumb { outline-color: var(--c-point); }
+.work__trigger:hover .work__thumb { outline-color: var(--c-point); }
 
-.work:hover .work__title { color: var(--c-point); }
+.work__trigger:hover + .work__info .work__title { color: var(--c-point); }
 
 /* 썸네일 아래 한 줄 — 제목은 왼쪽, 연도와 Details 는 오른쪽 */
 .work__info {
@@ -1047,7 +1048,7 @@ a:hover { color: var(--c-point); }
 
 .header__logo:hover,
 .nav__link:hover,
-.work:hover .work__thumb {
+.work__trigger:hover .work__thumb {
   transform: scale(1.05);
 }
 
