@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <!-- ?v= 는 캐시 무효화용 — CSS · JS 를 고칠 때마다 올린다. 안 올리면 미리보기/배포에서
        새 HTML 에 예전 CSS 가 섞여 보인다(실제로 발생). -->
-  <link rel="stylesheet" href="css/style.css?v=20260929-6">
+  <link rel="stylesheet" href="css/style.css?v=20260929-7">
 </head>
 <body>
 
@@ -114,22 +114,23 @@
             </div>
 
             <div class="story__stage" aria-hidden="true">
-              <div class="story__map"></div>
-
-              <!-- 선택한 장소의 짧은 영상(추상 프레임) → 투표 → 정답 -->
-              <div class="story__card">
-                <div class="story__frame">
-                  <canvas class="story__noise" width="96" height="54"></canvas>
-                  <span class="story__tag">VIDEO</span>
-                  <span class="story__time">00:00 / 00:08</span>
-                  <i class="story__progress"></i>
+              <!-- 지도(svg 는 js 가 넣는다) — 카드는 지도 상자 기준으로 선택된 장소 옆에 붙는다 -->
+              <div class="story__map">
+                <!-- 선택한 장소의 짧은 영상(추상 프레임) → 투표 → 정답 -->
+                <div class="story__card">
+                  <div class="story__frame">
+                    <canvas class="story__noise" width="96" height="54"></canvas>
+                    <span class="story__tag">VIDEO</span>
+                    <span class="story__time">00:00 / 00:08</span>
+                    <i class="story__progress"></i>
+                  </div>
+                  <div class="story__vote">
+                    <span class="story__chip">실제</span>
+                    <span class="story__chip is-answer">AI</span>
+                    <span class="story__chip">모르겠음</span>
+                  </div>
+                  <p class="story__answer">정답 · AI가 생성한 영상</p>
                 </div>
-                <div class="story__vote">
-                  <span class="story__chip">실제</span>
-                  <span class="story__chip is-answer">AI</span>
-                  <span class="story__chip">모르겠음</span>
-                </div>
-                <p class="story__answer">정답 · AI가 생성한 영상</p>
               </div>
 
               <ul class="story__legend">
@@ -223,7 +224,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
-  <script src="js/world-dots.js?v=20260929-6"></script>
-  <script src="js/main.js?v=20260929-6"></script>
+  <script src="js/world-dots.js?v=20260929-7"></script>
+  <script src="js/main.js?v=20260929-7"></script>
 </body>
 </html>

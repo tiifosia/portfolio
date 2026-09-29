@@ -14,6 +14,107 @@
 })();
 
 /**
+ * 부드러운 스크롤 — 휠 한 번(또는 링크 이동)마다 '서서히 출발 → 최고 속도 → 서서히 멈춤'.
+ * 브라우저 기본 휠은 누르자마자 최고 속도로 움직이고 뚝 멈춰 어색하다.
+ * 목표 위치를 부드럽게 따라가는 단계를 4번 겹쳤다(각 단계가 앞 단계를 지수적으로 따라감).
+ * 한 번 굴리면 속도가 0 에서 서서히 올라 약 0.25초에 최고, 약 0.7초에 거의 멈춘다(95%).
+ * 계속 굴려도 속도가 끊기지 않고, 목표를 지나쳤다 되돌아오는(튕김) 일이 원리상 없다.
+ * 터치(휴대폰)는 기기 기본 관성을 그대로 쓰고, 모션 최소화 설정이면 켜지 않는다.
+ */
+(function () {
+  'use strict';
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  var TAU = 0.09;                            /* 한 단계의 시간 상수(초) — 4단계 합쳐 약 0.7초 */
+  var N = 4;
+  var root = document.documentElement;
+  /* 매 프레임 위치를 직접 정하므로 CSS 의 smooth 는 끈다(겹치면 두 번 부드러워져 어긋난다) */
+  root.style.scrollBehavior = 'auto';
+
+  var stages = [], tau = TAU, running = false, last = 0, lastSet = null;
+  var reset = function (y) { stages = []; for (var i = 0; i <= N; i++) stages.push(y); };
+  reset(window.scrollY);
+
+  var maxScroll = function () { return root.scrollHeight - window.innerHeight; };
+  var clamp = function (y) { return Math.max(0, Math.min(maxScroll(), y)); };
+
+  var tick = function (now) {
+    /* 프레임이 느린 기기에서도 같은 시간에 도착하도록 실제 경과 시간을 쓴다(각 단계는 dt 가 커도 안정).
+       다른 탭에 다녀온 뒤처럼 아주 긴 간격만 잘라 둔다 */
+    var dt = Math.min(0.25, (now - last) / 1000);
+    last = now;
+    var k = 1 - Math.exp(-dt / tau);
+    for (var i = 1; i <= N; i++) stages[i] += (stages[i - 1] - stages[i]) * k;
+    var y = stages[N];
+    var done = true;
+    for (var j = 1; j <= N; j++) if (Math.abs(stages[j] - stages[0]) > 0.4) { done = false; break; }
+    if (done) { reset(stages[0]); y = stages[0]; running = false; tau = TAU; }
+    lastSet = Math.round(y);
+    window.scrollTo(0, y);
+    if (running) requestAnimationFrame(tick);
+  };
+
+  var go = function (to, t) {
+    if (!running) reset(window.scrollY);
+    stages[0] = clamp(to);
+    if (t) tau = t;
+    if (!running) { running = true; last = performance.now(); requestAnimationFrame(tick); }
+  };
+
+  /* 다른 방법(스크롤바 끌기, 터치, 새로고침 등)으로 움직였으면 그 자리에서 다시 시작 */
+  window.addEventListener('scroll', function () {
+    if (!running) { reset(window.scrollY); return; }
+    if (lastSet !== null && Math.abs(window.scrollY - lastSet) > 2) { running = false; tau = TAU; reset(window.scrollY); }
+  }, { passive: true });
+
+  /* 휠 · 트랙패드 */
+  window.addEventListener('wheel', function (e) {
+    if (e.ctrlKey || e.defaultPrevented) return;                   /* 확대/축소 */
+    if (document.body.style.overflow === 'hidden') return;         /* 모달이 열려 있음 */
+    if (e.target.closest && e.target.closest('.modal')) return;
+    var unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+    var dy = e.deltaY * unit;
+    if (Math.abs(e.deltaX * unit) > Math.abs(dy)) return;          /* 가로 스크롤은 그대로 */
+    e.preventDefault();
+    go((running ? stages[0] : window.scrollY) + dy);
+  }, { passive: false });
+
+  /* 키보드 — 입력칸·버튼에 포커스가 있으면 그대로 둔다 */
+  window.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (document.body.style.overflow === 'hidden') return;
+    var el = e.target;
+    if (el.closest && el.closest('input, textarea, select, button, [contenteditable], .modal')) return;
+    var page = window.innerHeight * 0.85, d = null;
+    switch (e.key) {
+      case 'ArrowDown': d = 120; break;
+      case 'ArrowUp': d = -120; break;
+      case 'PageDown': d = page; break;
+      case 'PageUp': d = -page; break;
+      case ' ': case 'Spacebar': d = e.shiftKey ? -page : page; break;
+      case 'Home': d = -Infinity; break;
+      case 'End': d = Infinity; break;
+    }
+    if (d === null) return;
+    e.preventDefault();
+    go((running ? stages[0] : window.scrollY) + d);
+  });
+
+  /* 페이지 안 링크(#about 등) — 같은 방식으로, 멀수록 조금 더 느긋하게 */
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]');
+    if (!a || e.defaultPrevented) return;
+    var id = a.getAttribute('href');
+    var el = id === '#top' ? null : document.querySelector(id);
+    if (id !== '#top' && !el) return;
+    e.preventDefault();
+    var to = el ? el.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(el).scrollMarginTop) || 0) : 0;
+    go(to, Math.min(0.15, TAU + Math.abs(to - window.scrollY) / 60000));
+  });
+})();
+
+/**
  * 헤더 스크롤 상태
  * 최상단을 벗어나면 헤더에 배경(블러)을 입힌다.
  */
@@ -208,8 +309,8 @@ function hangulSteps(text) {
   var data = window.WORLD_DOTS;
   if (!story || !data) return;
 
-  var S = 10;                                   /* 격자 한 칸 (viewBox 단위) */
-  var W = data.cols * S, H = data.rows.length * S;
+  var S = data.size;                            /* 격자 한 칸 (viewBox 단위) */
+  var W = data.width, H = data.height;
   var NS = 'http://www.w3.org/2000/svg';
   var el = function (tag, attrs) {
     var n = document.createElementNS(NS, tag);
@@ -244,11 +345,7 @@ function hangulSteps(text) {
   var seed = 7;
   var rand = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
   var ptsG = el('g', { class: 'story__pts' });
-  var project = function (lon, lat) {
-    return [(lon - data.lon0) / data.step * S, (data.lat0 - lat) / data.step * S];
-  };
-  data.places.forEach(function (pl, i) {
-    var p = project(pl[0], pl[1]);
+  data.places.forEach(function (p, i) {
     var r = rand();
     var v = i === 0 ? 'ai' : r < 0.42 ? 'real' : r < 0.78 ? 'ai' : 'neutral';
     var c = el('circle', { class: 'story__pt' + (i === 0 ? ' is-pick' : ''), cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 4.4 });
@@ -266,7 +363,9 @@ function hangulSteps(text) {
   });
   svg.appendChild(ptsG);
 
-  story.querySelector('.story__map').appendChild(svg);
+  /* 카드보다 앞에 — 카드는 지도 상자 안에서 % 로 자리를 잡는다 */
+  var mapBox = story.querySelector('.story__map');
+  mapBox.insertBefore(svg, mapBox.firstChild);
 
   /* 좁은 화면에서는 지도가 작아 점이 2px 도 안 된다 — 장소 점만 키운다 */
   var narrow = window.matchMedia('(max-width: 768px)');

@@ -720,6 +720,9 @@ a:hover { color: var(--c-point); }
 /* ── 지도 ───────────────────────────────────────── */
 .story__stage { position: relative; }
 
+/* 카드의 % 위치 기준 — 범례까지 포함한 영역이 아니라 지도 상자 */
+.story__map { position: relative; }
+
 .story__map svg {
   display: block;
   width: 100%;
