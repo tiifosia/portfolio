@@ -259,8 +259,10 @@ function hangulSteps(text) {
       var q = question.getBoundingClientRect();
       var fs = parseFloat(getComputedStyle(question).fontSize);
       var x = caretBefore ? r.left - q.left - 0.1 * fs : r.right - q.left + 0.04 * fs;
-      caret.style.height = r.height * 0.76 + 'px';
-      caret.style.transform = 'translate(' + x + 'px,' + (r.top - q.top + r.height * 0.14) + 'px)';
+      /* S-Core Dream Light 의 한글은 글자 상자 높이의 4.8%~83.9% 에 그려진다(실측).
+         커서가 글자 위아래를 살짝 넘도록 3%~88% 로 */
+      caret.style.height = r.height * 0.85 + 'px';
+      caret.style.transform = 'translate(' + x + 'px,' + (r.top - q.top + r.height * 0.03) + 'px)';
     };
 
     var shown = -1;
