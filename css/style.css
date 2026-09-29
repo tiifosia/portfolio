@@ -707,7 +707,7 @@ a:hover { color: var(--c-point); }
   letter-spacing: 0.02em;
 }
 
-/* 상세보기 — 연도 아래 작은 글자 링크. 기본은 보조 색, 호버 시 포인트 컬러 */
+/* Details — 연도 아래 작은 글자 링크. 기본은 보조 색, 호버 시 포인트 컬러 */
 .work__more {
   display: inline-block;
   margin-top: 14px;
