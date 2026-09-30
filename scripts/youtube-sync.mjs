@@ -22,8 +22,9 @@
  *     Negative prompt:     → 다음 머리말까지 Negative prompt   (네거티브 프롬프트: 도 됨)
  *     Remarks:             → 다음 머리말까지 Remarks           (비고: 도 됨)
  * 머리말은 콜론이 없거나([Prompt], 📌 Prompt, Positive prompt 등) 조금 달라도 알아듣는다.
- * 첫 머리말 앞에 쓴 글과 #해시태그만 있는 줄은 형식 밖 정보로 보고 Remarks 에 모은다.
- * 머리말이 하나도 없으면 설명 전체가 Remarks 가 된다.
+ * Prompt 머리말 없이 쓴 본문은, 설명이 형식을 쓰고 있으면(사용 모델 · 길이 · Negative prompt 가 있음) Prompt 로 본다.
+ * 형식 없이 쓴 설명이면 전체가 Remarks. #해시태그만 있는 줄은 늘 Remarks.
+ * 그 밖에 남길 말은 Remarks: 머리말 아래에 쓴다.
  *
  * 바뀐 것이 있으면 GITHUB_OUTPUT 의 summary 로 알린다(커밋 메시지용).
  * 필요한 환경 변수(저장소 비밀값): YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
@@ -155,8 +156,9 @@ const HEADS = [
 function parse(description) {
   const text = (description || '').replace(/\r\n?/g, '\n').trim();
   if (!text) return null;
-  const d = { specs: [], prompt: [], negative: [], remarks: [] };
-  let cur = 'remarks';
+  const d = { specs: [], prompt: [], negative: [], remarks: [], loose: [] };
+  const seen = new Set();
+  let cur = 'loose';                                /* 머리말 밖(첫 머리말 앞)의 글 */
   for (const raw of text.split('\n')) {
     const line = raw.trim();
     const spec = SPECS.find(([name, re]) => re.test(line) && !d.specs.some(s => s[0] === name));
@@ -164,6 +166,7 @@ function parse(description) {
     const head = HEADS.find(([, re]) => re.test(line));
     if (head) {
       cur = head[0];
+      seen.add(cur);
       const rest = (line.match(head[1])[1] || '').trim();
       if (rest) d[cur].push(rest);
       continue;
@@ -175,6 +178,10 @@ function parse(description) {
     }
     d[cur].push(line);
   }
+  /* 머리말 없는 본문 — 형식을 쓴 설명(사용 모델 · 길이 · Negative prompt 가 있음)에서 Prompt 머리말이
+     없으면 그 본문이 곧 프롬프트다(DAY 1 을 적어 주신 방식). 형식 없이 쓴 설명이면 Remarks */
+  if (!seen.has('prompt') && (d.specs.length || seen.has('negative'))) d.prompt = d.loose;
+  else d.remarks = d.loose.concat(d.remarks.length && d.loose.length ? [''] : [], d.remarks);
   d.specs.sort((a, b) => SPECS.findIndex(s => s[0] === a[0]) - SPECS.findIndex(s => s[0] === b[0]));
   for (const k of ['prompt', 'negative', 'remarks']) d[k] = d[k].join('\n').replace(/\n{3,}/g, '\n\n').trim();
   return d;
