@@ -7,7 +7,8 @@
  * - START_AFTER(손으로 넣은 마지막 영상) 뒤에 올라온 영상만 본다 — 채널의 옛 영상은 건드리지 않는다.
  * - 일부 공개 · 공개이고 처리가 끝난 영상만 넣는다. 비공개는 방문자가 재생할 수 없어 건너뛰고,
  *   나중에 일부 공개로 바꾸면 그다음 실행 때 들어간다.
- * - 제목은 지금 있는 가장 큰 DAY 번호 + 1, 아래 정보는 올린 해(한국 시간).
+ * - 제목은 지금 있는 가장 큰 DAY 번호 + 1, 아래 정보는 올린 날짜와 상관없이 늘 YEAR(2026).
+ *   Details 버튼은 넣지 않는다 — 상세 정보는 따로 요청이 있을 때 손으로 넣는다.
  * - 넣은 카드는 GITHUB_OUTPUT 의 added 로 알린다(커밋 메시지용).
  *
  * 필요한 환경 변수(저장소 비밀값): YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
@@ -16,6 +17,7 @@ import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 
 const CHANNEL_ID = 'UCP9TZil5EtUoU3-BJULSpdg';   /* AI영상팀 */
 const START_AFTER = 'epA7yq1SJAA';                /* DAY 2 */
+const YEAR = '2026';
 const PAGE = new URL('../index.html', import.meta.url);
 const MARK = /^([ \t]*)<!-- works:auto\b.*$/m;
 
@@ -87,7 +89,6 @@ for (let i = 0; i < ids.length; i += 50) {
 }
 
 let day = Math.max(0, ...[...html.matchAll(/class="work__title">DAY (\d+)</g)].map(m => +m[1]));
-const year = iso => new Intl.DateTimeFormat('en', { timeZone: 'Asia/Seoul', year: 'numeric' }).format(new Date(iso));
 const pad = mark[1];
 const added = [];
 for (const id of ids) {
@@ -112,7 +113,7 @@ for (const id of ids) {
     `  </button>`,
     `  <div class="work__info">`,
     `    <h3 class="work__title">DAY ${day}</h3>`,
-    `    <p class="work__meta">${year(v.snippet.publishedAt)}</p>`,
+    `    <p class="work__meta">${YEAR}</p>`,
     `  </div>`,
     `</li>`
   ].map(line => pad + line + '\n').join('');
