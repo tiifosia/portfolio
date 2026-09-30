@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <!-- ?v= 는 캐시 무효화용 — CSS · JS 를 고칠 때마다 올린다. 안 올리면 미리보기/배포에서
        새 HTML 에 예전 CSS 가 섞여 보인다(실제로 발생). -->
-  <link rel="stylesheet" href="css/style.css?v=20260930-2">
+  <link rel="stylesheet" href="css/style.css?v=20260930-3">
 </head>
 <body>
 
@@ -175,6 +175,8 @@
               <button class="work__more" type="button" data-detail="detail-day1">Details</button>
             </div>
           </li>
+          <!-- 여기서부터 /works:auto 까지(DAY 2~)는 유튜브 자동 추가가 매시간 다시 쓴다 — 새 영상 카드, 설명이 있으면 Details (scripts/youtube-sync.mjs) -->
+          <!-- works:auto -->
           <li class="work" data-reveal>
             <button class="work__trigger" type="button"
                     data-video-id="epA7yq1SJAA"
@@ -190,7 +192,7 @@
               <p class="work__meta">2026</p>
             </div>
           </li>
-          <!-- works:auto — 유튜브에 새로 올린 영상 카드는 이 줄 바로 위에 자동으로 붙는다 (.github/workflows/youtube-sync.yml) -->
+          <!-- /works:auto -->
         </ul>
       </div>
     </section>
@@ -232,6 +234,10 @@
     </article>
   </template>
 
+  <!-- 유튜브 영상 설명으로 만든 상세 정보 — 스크립트가 매시간 다시 쓴다. 설명 형식은 scripts/youtube-sync.mjs 맨 위 참고 -->
+  <!-- details:auto -->
+  <!-- /details:auto -->
+
   <div class="modal" id="modal">
     <div class="modal__backdrop" data-close></div>
     <div class="modal__dialog" role="dialog" aria-modal="true" aria-label="영상 재생">
@@ -242,7 +248,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
-  <script src="js/world-dots.js?v=20260930-2"></script>
-  <script src="js/main.js?v=20260930-2"></script>
+  <script src="js/world-dots.js?v=20260930-3"></script>
+  <script src="js/main.js?v=20260930-3"></script>
 </body>
 </html>

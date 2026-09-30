@@ -1,5 +1,5 @@
-# 유튜브 채널 AI영상팀(UCP9TZil5EtUoU3-BJULSpdg)에 새 영상(일부 공개 · 공개)이 올라오면 Works 에 'DAY N' 카드를 붙여
-# 공개 사이트(이 브랜치)에 바로 반영한다. 한 시간마다 확인하고,
+# 유튜브 채널 AI영상팀(UCP9TZil5EtUoU3-BJULSpdg)에 새 영상(일부 공개 · 공개)이 올라오면 Works 에 'DAY N' 카드를 붙이고,
+# 영상 설명이 있으면 Details 로 만들어(고치면 따라감) 공개 사이트(이 브랜치)에 바로 반영한다. 한 시간마다 확인하고,
 # Actions 탭 → YouTube → Works → Run workflow 로 바로 돌릴 수도 있다.
 # 필요한 저장소 비밀값: YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
 name: YouTube → Works
@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: 20
 
-      - name: 새 영상 확인
+      - name: 새 영상 · 설명 확인
         id: sync
         run: node scripts/youtube-sync.mjs
         env:
@@ -43,15 +43,15 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
 
       - name: 공개 사이트에 반영
-        if: steps.sync.outputs.added != ''
+        if: steps.sync.outputs.summary != ''
         env:
-          ADDED: ${{ steps.sync.outputs.added }}
+          SUMMARY: ${{ steps.sync.outputs.summary }}
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m "Works 에 $ADDED 자동 추가 (유튜브 새 영상)"
+          git commit -m "Works: $SUMMARY (유튜브 자동)"
           git push origin "HEAD:$SITE_BRANCH"
           # 봇이 올린 커밋에도 Pages 가 다시 빌드되도록 한 번 더 요청한다(이미 빌드 중이어도 무해)
           gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" > /dev/null \
@@ -60,7 +60,7 @@ jobs:
       # 베타 브랜치도 새 카드를 받아 둔다(나중에 베타를 메인으로 올릴 때 어긋나지 않게).
       # 베타에서 같은 곳을 고치고 있어 합쳐지지 않으면 건드리지 않고 경고만 남긴다.
       - name: v2_beta 에도 반영
-        if: steps.sync.outputs.added != ''
+        if: steps.sync.outputs.summary != ''
         run: |
           MAIN=$(git rev-parse HEAD)
           git fetch origin "$BETA_BRANCH"

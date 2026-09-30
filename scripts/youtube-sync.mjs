@@ -1,16 +1,30 @@
 /**
- * 유튜브 채널 AI영상팀(@AI영상팀)에 새로 올린 영상을 Works 에 'DAY N' 카드로 붙인다.
+ * 유튜브 채널 AI영상팀(@AI영상팀)의 영상을 Works 카드로 관리한다.
  * .github/workflows/youtube-sync.yml 이 한 시간마다 실행한다(로컬에서 직접 돌려도 된다).
  *
+ * index.html 의 <!-- works:auto --> ~ <!-- /works:auto --> (DAY 2~) 와
+ * <!-- details:auto --> ~ <!-- /details:auto --> 는 이 스크립트가 매번 다시 쓴다.
+ * DAY 1 은 손으로 쓴 카드 · 상세라 영역 밖에 있고 건드리지 않는다.
+ *
+ * 새 카드
  * - 채널 주인 계정으로 인증해 업로드 목록을 읽는다. 일부 공개 영상은 주인만 목록에서 볼 수 있다.
- *   인증한 채널이 CHANNEL_ID 가 아니면 아무것도 붙이지 않고 멈춘다.
- * - START_AFTER(손으로 넣은 마지막 영상) 뒤에 올라온 영상만 본다 — 채널의 옛 영상은 건드리지 않는다.
+ *   인증한 채널이 CHANNEL_ID 가 아니면 아무것도 바꾸지 않고 멈춘다.
+ * - START_AFTER(DAY 2) 뒤에 올라온 영상만 본다 — 채널의 옛 영상은 건드리지 않는다.
  * - 일부 공개 · 공개이고 처리가 끝난 영상만 넣는다. 비공개는 방문자가 재생할 수 없어 건너뛰고,
  *   나중에 일부 공개로 바꾸면 그다음 실행 때 들어간다.
  * - 제목은 지금 있는 가장 큰 DAY 번호 + 1, 아래 정보는 올린 날짜와 상관없이 늘 YEAR(2026).
- *   Details 버튼은 넣지 않는다 — 상세 정보는 따로 요청이 있을 때 손으로 넣는다.
- * - 넣은 카드는 GITHUB_OUTPUT 의 added 로 알린다(커밋 메시지용).
  *
+ * Details — 영상 설명이 있으면 붙고, 없으면 붙지 않는다. 설명을 고치거나 지우면 다음 실행 때 따라간다.
+ * 설명은 줄 맨 앞의 머리말로 나눈다(대소문자 무관, 콜론은 : 또는 ：).
+ *     사용 모델: wan        → 상단 표   (모델: 도 됨)
+ *     길이: 8초             → 상단 표
+ *     Prompt:              → 다음 머리말까지 Prompt            (프롬프트: 도 됨)
+ *     Negative prompt:     → 다음 머리말까지 Negative prompt   (네거티브 프롬프트: 도 됨)
+ *     Remarks:             → 다음 머리말까지 Remarks           (비고: 도 됨)
+ * 첫 머리말 앞에 쓴 글과 #해시태그만 있는 줄은 형식 밖 정보로 보고 Remarks 에 모은다.
+ * 머리말이 하나도 없으면 설명 전체가 Remarks 가 된다.
+ *
+ * 바뀐 것이 있으면 GITHUB_OUTPUT 의 summary 로 알린다(커밋 메시지용).
  * 필요한 환경 변수(저장소 비밀값): YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
  */
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
@@ -19,7 +33,6 @@ const CHANNEL_ID = 'UCP9TZil5EtUoU3-BJULSpdg';   /* AI영상팀 */
 const START_AFTER = 'epA7yq1SJAA';                /* DAY 2 */
 const YEAR = '2026';
 const PAGE = new URL('../index.html', import.meta.url);
-const MARK = /^([ \t]*)<!-- works:auto\b.*$/m;
 
 const { YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN, GITHUB_OUTPUT } = process.env;
 
@@ -72,26 +85,40 @@ do {
 } while (!found && pageToken);
 if (!found) throw new Error(`기준 영상(${START_AFTER})이 이 채널 업로드에 없습니다 — 다른 채널로 인증했는지 확인`);
 
-let html = readFileSync(PAGE, 'utf8');
-const mark = html.match(MARK);
-if (!mark) throw new Error('index.html 에 <!-- works:auto --> 표시가 없습니다');
+/* ---------- index.html 의 관리 영역 ---------- */
+const html = readFileSync(PAGE, 'utf8');
+const area = name => {
+  const a = html.indexOf(`<!-- ${name}:auto -->`), b = html.indexOf(`<!-- /${name}:auto -->`);
+  if (a < 0 || b < a) throw new Error(`index.html 에 <!-- ${name}:auto --> ~ <!-- /${name}:auto --> 표시가 없습니다`);
+  const from = html.indexOf('\n', a) + 1, to = html.lastIndexOf('\n', b) + 1;
+  return { pad: html.slice(html.lastIndexOf('\n', a) + 1, a), from, to, body: html.slice(from, to) };
+};
+const works = area('works'), details = area('details');
+if (works.to > details.from) throw new Error('works:auto 가 details:auto 보다 앞에 있어야 합니다');
+
+const cards = [...works.body.matchAll(/<li\b[\s\S]*?<\/li>/g)].map(([li]) => ({
+  id: li.match(/data-video-id="([\w-]{11})"/)?.[1],
+  day: +li.match(/class="work__title">DAY (\d+)</)?.[1],
+  meta: li.match(/class="work__meta">([^<]*)</)?.[1] ?? YEAR
+}));
+if (cards.some(c => !c.id || !c.day)) throw new Error('works:auto 안의 카드를 읽지 못했습니다');
+const oldTpl = {};
+for (const m of details.body.matchAll(/^[ \t]*<template id="detail-yt-([\w-]{11})">[\s\S]*?<\/template>\n/gm)) oldTpl[m[1]] = m[0];
+
 const onPage = new Set([...html.matchAll(/data-video-id="([\w-]{11})"/g)].map(m => m[1]));
-const ids = newer.reverse().filter(id => !onPage.has(id));   /* 오래된 것부터 */
-if (!ids.length) {
-  console.log('새 영상 없음');
-  process.exit(0);
-}
+const fresh = newer.reverse().filter(id => !onPage.has(id));   /* 오래된 것부터 */
 
 const info = {};
+const ids = [...cards.map(c => c.id), ...fresh];
 for (let i = 0; i < ids.length; i += 50) {
   const page = await api('videos', { part: 'status,snippet', id: ids.slice(i, i + 50).join(',') });
   for (const v of page.items) info[v.id] = v;
 }
 
+/* ---------- 새 카드 ---------- */
 let day = Math.max(0, ...[...html.matchAll(/class="work__title">DAY (\d+)</g)].map(m => +m[1]));
-const pad = mark[1];
 const added = [];
-for (const id of ids) {
+for (const id of fresh) {
   const v = info[id];
   const why = !v ? '정보 없음'
     : !['public', 'unlisted'].includes(v.status.privacyStatus) ? v.status.privacyStatus + ' (비공개는 방문자가 재생할 수 없음)'
@@ -100,28 +127,118 @@ for (const id of ids) {
     : '';
   if (why) { console.log(`건너뜀 ${id}: ${why}`); continue; }
   day += 1;
-  const card = [
-    `<li class="work" data-reveal>`,
-    `  <button class="work__trigger" type="button"`,
-    `          data-video-id="${id}"`,
-    `          aria-label="DAY ${day} 영상 재생">`,
-    `    <figure class="work__thumb">`,
-    `      <img src="https://img.youtube.com/vi/${id}/maxresdefault.jpg"`,
-    `           data-fallback="https://img.youtube.com/vi/${id}/hqdefault.jpg"`,
-    `           alt="" loading="lazy">`,
-    `    </figure>`,
-    `  </button>`,
-    `  <div class="work__info">`,
-    `    <h3 class="work__title">DAY ${day}</h3>`,
-    `    <p class="work__meta">${YEAR}</p>`,
-    `  </div>`,
-    `</li>`
-  ].map(line => pad + line + '\n').join('');
-  html = html.replace(MARK, m => card + m);
+  cards.push({ id, day, meta: YEAR });
   added.push(`DAY ${day}`);
   console.log(`추가 DAY ${day}: ${id} (${v.snippet.title})`);
 }
 
-if (!added.length) process.exit(0);
-writeFileSync(PAGE, html);
-if (GITHUB_OUTPUT) appendFileSync(GITHUB_OUTPUT, `added=${added.join(', ')}\n`);
+/* ---------- 설명 → 상세 ---------- */
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const SPECS = [
+  ['사용 모델', /^(?:사용\s*모델|모델|model)\s*[:：]\s*(.+)$/i],
+  ['길이', /^(?:길이|length|duration)\s*[:：]\s*(.+)$/i]
+];
+const HEADS = [
+  ['negative', /^(?:negative\s*prompt|네거티브\s*프롬프트)\s*[:：]\s*(.*)$/i],
+  ['prompt', /^(?:prompt|프롬프트)\s*[:：]\s*(.*)$/i],
+  ['remarks', /^(?:remarks?|비고)\s*[:：]\s*(.*)$/i]
+];
+
+function parse(description) {
+  const text = (description || '').replace(/\r\n?/g, '\n').trim();
+  if (!text) return null;
+  const d = { specs: [], prompt: [], negative: [], remarks: [] };
+  let cur = 'remarks';
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    const spec = SPECS.find(([name, re]) => re.test(line) && !d.specs.some(s => s[0] === name));
+    if (spec) { d.specs.push([spec[0], line.match(spec[1])[1].trim()]); continue; }
+    const head = HEADS.find(([, re]) => re.test(line));
+    if (head) {
+      cur = head[0];
+      const rest = line.match(head[1])[1].trim();
+      if (rest) d[cur].push(rest);
+      continue;
+    }
+    if (/^(#[^\s#]+\s*)+$/.test(line)) {           /* 해시태그만 있는 줄 */
+      if (d.remarks.length && d.remarks[d.remarks.length - 1] !== '') d.remarks.push('');
+      d.remarks.push(line);
+      continue;
+    }
+    d[cur].push(line);
+  }
+  d.specs.sort((a, b) => SPECS.findIndex(s => s[0] === a[0]) - SPECS.findIndex(s => s[0] === b[0]));
+  for (const k of ['prompt', 'negative', 'remarks']) d[k] = d[k].join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return d;
+}
+
+const paragraphs = text => text.split(/\n\s*\n/).map(p => `<p>${esc(p.trim()).replace(/\n/g, '<br>')}</p>`);
+
+function detail(card, d) {
+  const lines = [
+    `<template id="detail-yt-${card.id}">`,
+    `  <article class="detail">`,
+    `    <h3 class="detail__title">DAY ${card.day}</h3>`
+  ];
+  if (d.specs.length) {
+    lines.push(`    <dl class="detail__specs">`);
+    for (const [k, v] of d.specs) lines.push(`      <div><dt>${k}</dt><dd>${esc(v)}</dd></div>`);
+    lines.push(`    </dl>`);
+  }
+  for (const [label, text] of [['Prompt', d.prompt], ['Negative prompt', d.negative], ['Remarks', d.remarks]]) {
+    if (!text) continue;
+    lines.push(`    <h4 class="detail__label">${label}</h4>`, `    <div class="detail__text">`);
+    for (const p of paragraphs(text)) lines.push(`      ${p}`);
+    lines.push(`    </div>`);
+  }
+  lines.push(`  </article>`, `</template>`);
+  return lines.map(l => details.pad + l + '\n').join('');
+}
+
+const tpl = {};
+const changed = [];
+for (const c of cards) {
+  const v = info[c.id];
+  if (!v) {                                        /* 정보를 못 받으면(삭제 등) 있던 상세를 그대로 둔다 */
+    if (oldTpl[c.id]) tpl[c.id] = oldTpl[c.id];
+    continue;
+  }
+  const d = parse(v.snippet.description);
+  if (d) tpl[c.id] = detail(c, d);
+  const was = oldTpl[c.id], now = tpl[c.id];
+  if (!added.includes(`DAY ${c.day}`) && was !== now) {
+    changed.push(`DAY ${c.day} Details ${!was ? '추가' : !now ? '삭제' : '수정'}`);
+  }
+}
+
+const card = c => [
+  `<li class="work" data-reveal>`,
+  `  <button class="work__trigger" type="button"`,
+  `          data-video-id="${c.id}"`,
+  `          aria-label="DAY ${c.day} 영상 재생">`,
+  `    <figure class="work__thumb">`,
+  `      <img src="https://img.youtube.com/vi/${c.id}/maxresdefault.jpg"`,
+  `           data-fallback="https://img.youtube.com/vi/${c.id}/hqdefault.jpg"`,
+  `           alt="" loading="lazy">`,
+  `    </figure>`,
+  `  </button>`,
+  `  <div class="work__info">`,
+  `    <h3 class="work__title">DAY ${c.day}</h3>`,
+  `    <p class="work__meta">${c.meta}</p>`,
+  ...(tpl[c.id] ? [`    <button class="work__more" type="button" data-detail="detail-yt-${c.id}">Details</button>`] : []),
+  `  </div>`,
+  `</li>`
+].map(l => works.pad + l + '\n').join('');
+
+/* 원본을 잘라 두 영역만 새로 끼운다 */
+const out = html.slice(0, works.from) + cards.map(card).join('') + html.slice(works.to, details.from)
+  + cards.map(c => tpl[c.id] || '').join('') + html.slice(details.to);
+
+if (out === html) {
+  console.log('바뀐 것 없음');
+  process.exit(0);
+}
+writeFileSync(PAGE, out);
+const summary = [added.length && `${added.join(', ')} 자동 추가`, ...changed].filter(Boolean).join(', ');
+changed.forEach(s => console.log(s));
+if (GITHUB_OUTPUT) appendFileSync(GITHUB_OUTPUT, `summary=${summary}\n`);

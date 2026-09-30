@@ -1203,6 +1203,8 @@ a:hover { color: var(--c-point); }
   font-size: clamp(15px, 1.2vw, 17px);
   line-height: 1.8;
   word-break: keep-all;
+  /* 유튜브 설명의 긴 주소가 창 밖으로 삐져나가지 않게 넘칠 때만 끊는다 */
+  overflow-wrap: anywhere;
 }
 
 .detail__text p + p { margin-top: 0.8em; }
