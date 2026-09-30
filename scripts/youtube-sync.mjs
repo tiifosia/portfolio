@@ -21,6 +21,7 @@
  *     Prompt:              → 다음 머리말까지 Prompt            (프롬프트: 도 됨)
  *     Negative prompt:     → 다음 머리말까지 Negative prompt   (네거티브 프롬프트: 도 됨)
  *     Remarks:             → 다음 머리말까지 Remarks           (비고: 도 됨)
+ * 머리말은 콜론이 없거나([Prompt], 📌 Prompt, Positive prompt 등) 조금 달라도 알아듣는다.
  * 첫 머리말 앞에 쓴 글과 #해시태그만 있는 줄은 형식 밖 정보로 보고 Remarks 에 모은다.
  * 머리말이 하나도 없으면 설명 전체가 Remarks 가 된다.
  *
@@ -134,14 +135,21 @@ for (const id of fresh) {
 
 /* ---------- 설명 → 상세 ---------- */
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/* 머리말은 느슨하게 알아듣는다 — 앞의 글머리표 · 괄호 · 이모지, 뒤의 (한글 풀이) · 닫는 괄호를 허용하고,
+   콜론 대신 - 도 되며, 머리말만 있는 줄이면 콜론이 없어도 된다(예: 'Prompt', '[Prompt]', '📌 Prompt :').
+   '#' 은 앞장식에서 뺀다 — '#prompt' 같은 해시태그 줄을 머리말로 읽지 않게 */
+const DECO = '[\\s\\-–—•·*>\\[\\(【「<〈\\p{Extended_Pictographic}\\uFE0F]*';
+const TAIL = '\\s*(?:[(\\[（【][^)\\]）】]*[)\\]）】])?\\s*[\\]\\)】」>〉]?\\s*';
+const spec = words => new RegExp(`^${DECO}(?:${words})${TAIL}[:：\\-–—]\\s*(.+)$`, 'iu');
+const head = words => new RegExp(`^${DECO}(?:${words})${TAIL}(?:[:：\\-–—]\\s*(.*))?$`, 'iu');
 const SPECS = [
-  ['사용 모델', /^(?:사용\s*모델|모델|model)\s*[:：]\s*(.+)$/i],
-  ['길이', /^(?:길이|length|duration)\s*[:：]\s*(.+)$/i]
+  ['사용 모델', spec('사용\\s*모델|모델|model')],
+  ['길이', spec('길이|length|duration')]
 ];
 const HEADS = [
-  ['negative', /^(?:negative\s*prompt|네거티브\s*프롬프트)\s*[:：]\s*(.*)$/i],
-  ['prompt', /^(?:prompt|프롬프트)\s*[:：]\s*(.*)$/i],
-  ['remarks', /^(?:remarks?|비고)\s*[:：]\s*(.*)$/i]
+  ['negative', head('negative(?:\\s*prompts?)?|네거티브\\s*프롬프트|부정\\s*프롬프트')],
+  ['prompt', head('(?:positive\\s*)?prompts?|(?:긍정\\s*)?프롬프트')],
+  ['remarks', head('remarks?|비고|메모')]
 ];
 
 function parse(description) {
@@ -156,7 +164,7 @@ function parse(description) {
     const head = HEADS.find(([, re]) => re.test(line));
     if (head) {
       cur = head[0];
-      const rest = line.match(head[1])[1].trim();
+      const rest = (line.match(head[1])[1] || '').trim();
       if (rest) d[cur].push(rest);
       continue;
     }
