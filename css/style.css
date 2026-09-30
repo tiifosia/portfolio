@@ -1062,6 +1062,10 @@ a:hover { color: var(--c-point); }
 /* ==========================================================================
    헤더 이동 막 — 누르면 배경색으로 잠깐 덮었다 걷는다(헤더 바로 아래 층)
    ========================================================================== */
+/* 바로가기 주소로 들어올 때 — 옮기기 전 첫 화면을 가린다. 스크립트가 못 돌아도 3초 뒤 저절로 보인다 */
+html.is-deeplink body { visibility: hidden; animation: deeplink-failsafe 0s 3s forwards; }
+@keyframes deeplink-failsafe { to { visibility: visible; } }
+
 .veil {
   position: fixed;
   inset: 0;

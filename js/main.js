@@ -2,11 +2,15 @@
  * 새로고침하면 항상 첫 화면 맨 위에서 시작한다.
  * 브라우저의 스크롤 위치 복원을 끄고, 주소의 #about 같은 앵커도 지운다
  * (남아 있으면 새로고침 때 그 섹션으로 뛰어간다).
+ * 단 공유용 바로가기(…/#works · …/#about)로 들어오면 그 섹션에서 시작한다 — window.startSection 에
+ * 적어 두고 아래 '헤더 이동' 쪽에서 옮긴다. 주소의 # 는 여기서 지우므로 이어서 새로고침하면 다시 맨 위부터.
  */
 (function () {
   'use strict';
 
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  var start = window.location.hash.slice(1);
+  if (start === 'works' || start === 'about') window.startSection = start;
   if (window.location.hash) {
     history.replaceState(null, '', window.location.pathname + window.location.search);
   }
@@ -411,6 +415,16 @@ function hangulSteps(text) {
     if (!el) return 0;
     return el.getBoundingClientRect().top + window.scrollY - (parseFloat(getComputedStyle(el).scrollMarginTop) || 0);
   };
+  /* 바로가기로 들어왔을 때 — 글꼴 · 이미지가 자리를 잡은 뒤 옮긴다(느린 망에서도 1.5초 넘게 기다리지 않는다) */
+  var whenReady = function (cb) {
+    var done = false, n = 0;
+    var finish = function () { if (!done) { done = true; cb(); } };
+    var one = function () { if (++n === 2) finish(); };
+    if (document.readyState === 'complete') one(); else window.addEventListener('load', one, { once: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(one, one); else one();
+    setTimeout(finish, 1500);
+  };
+  var startEl = window.startSection && document.getElementById(window.startSection);
 
   /* GSAP 로드 실패나 모션 최소화 설정에서는 애니메이션 없이 즉시 노출한다 */
   if (!window.gsap || !window.ScrollTrigger ||
@@ -420,6 +434,12 @@ function hangulSteps(text) {
       window.scrollTo({ top: jumpY(el), behavior: 'instant' });
       if (id === 'top' && window.replaySignature) window.replaySignature();
     });
+    if (startEl) {
+      whenReady(function () {
+        window.scrollTo({ top: jumpY(startEl), behavior: 'instant' });
+        document.documentElement.classList.remove('is-deeplink');
+      });
+    }
     for (var i = 0; i < items.length; i++) items[i].removeAttribute('data-reveal');
     /* Project 스토리는 문장 넷과 완성된 지도만 */
     var storyStill = document.querySelector('.story');
@@ -738,6 +758,23 @@ function hangulSteps(text) {
   veil.className = 'veil';
   veil.setAttribute('aria-hidden', 'true');
   document.body.appendChild(veil);
+  /* 막이 덮인 채로 그 섹션에 옮기고, 막을 걷으며 등장 연출 — 헤더 이동과 바로가기 주소가 같이 쓴다 */
+  var land = function (id, el) {
+    window.scrollTo({ top: jumpY(el), behavior: 'instant' });
+    ScrollTrigger.update();
+    /* 스크롤을 늦게 따라오는(scrub) 연출은 곧장 제자리로 — 막이 걷힐 때 타이핑·지도가
+       거꾸로 감기거나 뒤따라오는 모습이 보이지 않게 */
+    ScrollTrigger.getAll().forEach(function (st) {
+      var tw = st.getTween();
+      if (tw) tw.progress(1);
+    });
+    if (reveals[id]) reveals[id].restart(true);
+    /* 서명은 막에 가려진 지금 첫 장면으로 되돌려야 다 쓴 서명이 한순간 비치지 않는다 */
+    if (id === 'top' && window.replaySignature) window.replaySignature();
+    if (window.pageScroll) window.pageScroll.lock(false);
+    gsap.to(veil, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+  };
+
   var jumping = null;   /* 막이 덮이는 중이면 갈 곳 — 그새 다른 메뉴를 누르면 마지막 것으로 */
   onJump(function (id, el) {
     if (jumping) { jumping = { id: id, el: el }; return; }
@@ -747,20 +784,8 @@ function hangulSteps(text) {
       autoAlpha: 1, duration: 0.2, ease: 'power1.in', overwrite: true,
       onComplete: function () {
         var to = jumping;
-        window.scrollTo({ top: jumpY(to.el), behavior: 'instant' });
-        ScrollTrigger.update();
-        /* 스크롤을 늦게 따라오는(scrub) 연출은 곧장 제자리로 — 막이 걷힐 때 타이핑·지도가
-           거꾸로 감기거나 뒤따라오는 모습이 보이지 않게 */
-        ScrollTrigger.getAll().forEach(function (st) {
-          var tw = st.getTween();
-          if (tw) tw.progress(1);
-        });
-        if (reveals[to.id]) reveals[to.id].restart(true);
-        /* 서명은 막에 가려진 지금 첫 장면으로 되돌려야 다 쓴 서명이 한순간 비치지 않는다 */
-        if (to.id === 'top' && window.replaySignature) window.replaySignature();
-        if (window.pageScroll) window.pageScroll.lock(false);
         jumping = null;
-        gsap.to(veil, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+        land(to.id, to.el);
       }
     });
   });
@@ -779,6 +804,18 @@ function hangulSteps(text) {
         }
       });
   });
+
+  /* 바로가기 주소(#works · #about)로 들어온 경우 — 첫 화면은 head 에서 이미 가려 두었다(is-deeplink).
+     막을 덮은 채 가림을 풀고, 자리를 잡으면 헤더 이동과 같은 연출로 그 섹션에서 시작한다 */
+  if (startEl) {
+    gsap.set(veil, { autoAlpha: 1 });
+    document.documentElement.classList.remove('is-deeplink');
+    if (window.pageScroll) window.pageScroll.lock(true);
+    whenReady(function () {
+      ScrollTrigger.refresh();
+      land(window.startSection, startEl);
+    });
+  }
 })();
 
 /* --------------------------------------------------------------------------
