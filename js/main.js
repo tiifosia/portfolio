@@ -415,6 +415,7 @@ function hangulSteps(text) {
     onJump(function (id, el) {
       if (window.pageScroll) window.pageScroll.stop();
       window.scrollTo({ top: jumpY(el), behavior: 'instant' });
+      if (id === 'top' && window.replaySignature) window.replaySignature();
     });
     for (var i = 0; i < items.length; i++) items[i].removeAttribute('data-reveal');
     /* Project 스토리는 문장 넷과 완성된 지도만 */
@@ -728,7 +729,8 @@ function hangulSteps(text) {
   });
 
   /* 헤더 이동 — 배경색 막이 0.2초 덮는 사이 그 섹션으로 옮기고, 막이 걷히며 섹션 등장 연출.
-     누를 때마다 같은 연출(이미 본 섹션도). 막은 헤더 바로 아래 층이라 헤더는 그대로 보인다. */
+     누를 때마다 같은 연출(이미 본 섹션도). 로고(맨 위)는 서명도 처음부터 다시 쓴다.
+     막은 헤더 바로 아래 층이라 헤더는 그대로 보인다. */
   var veil = document.createElement('div');
   veil.className = 'veil';
   veil.setAttribute('aria-hidden', 'true');
@@ -751,6 +753,8 @@ function hangulSteps(text) {
           if (tw) tw.progress(1);
         });
         if (reveals[to.id]) reveals[to.id].restart(true);
+        /* 서명은 막에 가려진 지금 첫 장면으로 되돌려야 다 쓴 서명이 한순간 비치지 않는다 */
+        if (to.id === 'top' && window.replaySignature) window.replaySignature();
         if (window.pageScroll) window.pageScroll.lock(false);
         jumping = null;
         gsap.to(veil, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
@@ -776,6 +780,7 @@ function hangulSteps(text) {
 
 /* --------------------------------------------------------------------------
    서명 영상 — 한 번 쓰이고 나면 마지막 프레임 그대로 굳는다
+   (헤더 로고로 맨 위에 돌아오면 처음부터 다시 쓴다 — window.replaySignature)
    -------------------------------------------------------------------------- */
 (function () {
   'use strict';
@@ -806,6 +811,15 @@ function hangulSteps(text) {
   video.addEventListener('emptied', keep);
   document.addEventListener('visibilitychange', keep);
   window.addEventListener('pageshow', keep);
+
+  /* 처음부터 다시 쓰기 — 다 쓰면 위의 ended 가 다시 굳힌다. 모션 최소화 설정이면 완성본 그대로 */
+  window.replaySignature = function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    frozen = false;
+    video.currentTime = 0;
+    var p = video.play();
+    if (p && p.catch) p.catch(freeze);
+  };
 
   /* 모션을 줄이는 설정이면 쓰는 과정 없이 완성된 서명만 보여준다 */
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
