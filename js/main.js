@@ -54,6 +54,9 @@
     if (done) { reset(stages[0]); y = stages[0]; running = false; }
     lastSet = Math.round(y);
     window.scrollTo(0, y);
+    /* 고정(pin) · 스크롤 연동 연출도 같은 프레임에 맞춘다. 스크롤 이벤트를 기다리면 한 프레임 늦어
+       고정이 풀리는 순간 화면이 한 프레임 멈췄다 한꺼번에 따라가는 '뚝' 이 생긴다(실측) */
+    if (window.ScrollTrigger) window.ScrollTrigger.update();
     if (running) raf = requestAnimationFrame(tick);
   };
 
@@ -788,7 +791,7 @@ function hangulSteps(text) {
   var video = document.querySelector('.signature__video');
   if (!video) return;
 
-  var frozen = false;
+  var frozen = false, selfSeek = false;
 
   /* 끝에서 아주 살짝 앞을 잡는다. 정확히 duration 으로 옮기면
      브라우저에 따라 빈 프레임이 잡힐 수 있다. */
@@ -798,7 +801,7 @@ function hangulSteps(text) {
     var d = video.duration;
     if (!isFinite(d) || d <= 0) return;
     var last = Math.max(0, d - 0.01);
-    if (Math.abs(video.currentTime - last) > 0.01) video.currentTime = last;
+    if (Math.abs(video.currentTime - last) > 0.01) { selfSeek = true; video.currentTime = last; }
   }
 
   video.addEventListener('ended', freeze);
@@ -807,7 +810,12 @@ function hangulSteps(text) {
      (탭 복귀, bfcache 복원, 브라우저의 자동 되감기 방어) */
   function keep() { if (frozen) freeze(); }
   video.addEventListener('play', keep);
-  video.addEventListener('seeked', keep);
+  /* 굳히려고 스스로 옮긴 탐색은 다시 굳히지 않는다. 브라우저가 위치를 프레임 경계에 맞춰
+     정확히 last 에 서지 않으면 탐색 → 굳히기 → 탐색이 끝없이 돌았다(초당 1만 번 넘게, 실측) */
+  video.addEventListener('seeked', function () {
+    if (selfSeek) { selfSeek = false; return; }
+    keep();
+  });
   video.addEventListener('emptied', keep);
   document.addEventListener('visibilitychange', keep);
   window.addEventListener('pageshow', keep);
@@ -815,7 +823,7 @@ function hangulSteps(text) {
   /* 처음부터 다시 쓰기 — 다 쓰면 위의 ended 가 다시 굳힌다. 모션 최소화 설정이면 완성본 그대로 */
   window.replaySignature = function () {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    frozen = false;
+    frozen = false; selfSeek = false;
     video.currentTime = 0;
     var p = video.play();
     if (p && p.catch) p.catch(freeze);
