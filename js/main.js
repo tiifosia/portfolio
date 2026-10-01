@@ -18,10 +18,11 @@
 })();
 
 /**
- * 부드러운 스크롤 — 휠 한 번(또는 키보드)마다 '서서히 출발 → 최고 속도 → 서서히 멈춤'.
- * 브라우저 기본 휠은 누르자마자 최고 속도로 움직이고 뚝 멈춰 어색하다.
- * 목표 위치를 부드럽게 따라가는 단계를 4번 겹쳤다(각 단계가 앞 단계를 지수적으로 따라감).
- * 한 번 굴리면 속도가 0 에서 서서히 올라 약 0.25초에 최고, 약 0.7초에 거의 멈춘다(95%).
+ * 부드러운 스크롤 — 휠 한 번(또는 키보드)마다 곧바로 움직이고 짧게 감속해 멈춘다.
+ * 브라우저 기본 휠은 칸마다 툭툭 끊겨 보여서, 목표 위치를 부드럽게 따라가는 단계를 2번 겹쳤다
+ * (각 단계가 앞 단계를 지수적으로 따라감). 한 번 굴리면 첫 프레임부터 움직여 약 0.04초에 최고 속도,
+ * 약 0.2초에 거의 멈춘다(95%). 화면이 손보다 평균 0.08초 늦는 정도라 반응은 기본 스크롤과 거의 같다.
+ * (예전엔 4단계 · 약 0.7초 — 천천히 출발해 평균 0.35초 늦게 따라와 굼뜨게 느껴졌다)
  * 계속 굴려도 속도가 끊기지 않고, 목표를 지나쳤다 되돌아오는(튕김) 일이 원리상 없다.
  * 터치(휴대폰)는 기기 기본 관성을 그대로 쓰고, 모션 최소화 설정이면 켜지 않는다.
  * 헤더 링크는 여기서 다루지 않는다(스크롤 없이 바로 이동 — 아래 '헤더 이동').
@@ -32,8 +33,8 @@
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  var TAU = 0.09;                            /* 한 단계의 시간 상수(초) — 4단계 합쳐 약 0.7초 */
-  var N = 4;
+  var TAU = 0.04;                            /* 한 단계의 시간 상수(초) — 2단계 합쳐 약 0.2초 */
+  var N = 2;
   var root = document.documentElement;
   /* 매 프레임 위치를 직접 정하므로 CSS 의 smooth 는 끈다(겹치면 두 번 부드러워져 어긋난다) */
   root.style.scrollBehavior = 'auto';
@@ -568,7 +569,7 @@ function hangulSteps(text) {
         start: 'top top',
         end: '+=320%',
         pin: true,
-        scrub: 0.6,
+        scrub: true,
         anticipatePin: 1
       }
     });
@@ -608,7 +609,7 @@ function hangulSteps(text) {
     });
     gsap.fromTo(words, { opacity: 0.2 }, {
       opacity: 1, ease: 'none', stagger: 0.1,
-      scrollTrigger: { trigger: lead, start: 'top 85%', end: 'bottom 45%', scrub: 0.6 }
+      scrollTrigger: { trigger: lead, start: 'top 85%', end: 'bottom 45%', scrub: true }
     });
   }
 
@@ -652,7 +653,7 @@ function hangulSteps(text) {
         if (idx !== active) { active = idx; num.textContent = '0' + (idx + 1); }
         storyEl.classList.toggle('is-picking', t >= 1.05 && t < 3);
       },
-      scrollTrigger: { trigger: storyEl, start: 'top 85%', end: '+=485%', scrub: 0.6 }
+      scrollTrigger: { trigger: storyEl, start: 'top 85%', end: '+=485%', scrub: true }
     });
 
     /* 들어오는 동안 — 육지를 왼쪽부터 쓸어 드러내고 첫 문장이 떠오른다 */
@@ -761,13 +762,8 @@ function hangulSteps(text) {
   /* 막이 덮인 채로 그 섹션에 옮기고, 막을 걷으며 등장 연출 — 헤더 이동과 바로가기 주소가 같이 쓴다 */
   var land = function (id, el) {
     window.scrollTo({ top: jumpY(el), behavior: 'instant' });
+    /* 스크롤 연동 연출(scrub)은 스크롤에 바로 붙어 있어, 여기서 한 번 맞추면 막이 걷힐 때 이미 제자리다 */
     ScrollTrigger.update();
-    /* 스크롤을 늦게 따라오는(scrub) 연출은 곧장 제자리로 — 막이 걷힐 때 타이핑·지도가
-       거꾸로 감기거나 뒤따라오는 모습이 보이지 않게 */
-    ScrollTrigger.getAll().forEach(function (st) {
-      var tw = st.getTween();
-      if (tw) tw.progress(1);
-    });
     if (reveals[id]) reveals[id].restart(true);
     /* 서명은 막에 가려진 지금 첫 장면으로 되돌려야 다 쓴 서명이 한순간 비치지 않는다 */
     if (id === 'top' && window.replaySignature) window.replaySignature();
@@ -800,7 +796,7 @@ function hangulSteps(text) {
           trigger: img.closest('.work'),
           start: 'top bottom',
           end: 'bottom top',
-          scrub: 0.6
+          scrub: true
         }
       });
   });
