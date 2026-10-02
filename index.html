@@ -193,6 +193,7 @@
             <div class="work__info">
               <h3 class="work__title">DAY 2</h3>
               <p class="work__meta">2026</p>
+              <button class="work__more" type="button" data-detail="detail-yt-epA7yq1SJAA">Details</button>
             </div>
           </li>
           <li class="work" data-reveal>
@@ -225,6 +226,22 @@
               <h3 class="work__title">DAY 4</h3>
               <p class="work__meta">2026</p>
               <button class="work__more" type="button" data-detail="detail-yt-sriBRLNUrbY">Details</button>
+            </div>
+          </li>
+          <li class="work" data-reveal>
+            <button class="work__trigger" type="button"
+                    data-video-id="MX1UcJnpUdg"
+                    aria-label="DAY 5 영상 재생">
+              <figure class="work__thumb">
+                <img src="https://img.youtube.com/vi/MX1UcJnpUdg/maxresdefault.jpg"
+                     data-fallback="https://img.youtube.com/vi/MX1UcJnpUdg/hqdefault.jpg"
+                     alt="" loading="lazy">
+              </figure>
+            </button>
+            <div class="work__info">
+              <h3 class="work__title">DAY 5</h3>
+              <p class="work__meta">2026</p>
+              <button class="work__more" type="button" data-detail="detail-yt-MX1UcJnpUdg">Details</button>
             </div>
           </li>
           <!-- /works:auto -->
@@ -271,6 +288,22 @@
 
   <!-- 유튜브 영상 설명으로 만든 상세 정보 — 스크립트가 매시간 다시 쓴다. 설명 형식은 scripts/youtube-sync.mjs 맨 위 참고 -->
   <!-- details:auto -->
+  <template id="detail-yt-epA7yq1SJAA">
+    <article class="detail">
+      <h3 class="detail__title">DAY 2</h3>
+      <dl class="detail__specs">
+        <div><dt>사용 모델</dt><dd>시댄스2, 길이: 8초</dd></div>
+      </dl>
+      <h4 class="detail__label">Prompt</h4>
+      <div class="detail__text">
+        <p>이탈리아의 가상의 소도시 Bellune의 평범한 주택가를 촬영한 실제 여행 영상처럼 보이는 장면.<br>늦은 오후, 맑지만 약간 흐린 날씨. 오래된 연한 노란색과 주황색 건물, 낡은 외벽, 나무로 된 창문 덧문과 작은 발코니가 있는 좁은 골목길. 건물 사이로 작은 광장이 보이고, 길가에는 소형 자동차와 스쿠터가 자연스럽게 주차되어 있다. 몇 명의 주민이 평범하게 걸어간다.<br>카메라는 사람의 눈높이에서 천천히 골목을 걸으며 촬영한다. 약간의 자연스러운 손떨림이 있는 핸드헬드 촬영. 특별한 연출이나 영화적인 구도 없이 실제 여행자가 우연히 거리를 촬영한 것처럼 보인다.<br>자연스러운 색감과 조명, 현실적인 건물과 거리의 흔적. 관광 홍보 영상이 아닌 평범한 거리 기록 영상.<br>8초, 16:9, 사실적인 영상.</p>
+      </div>
+      <h4 class="detail__label">Negative prompt</h4>
+      <div class="detail__text">
+        <p>비현실적인 건물, 판타지, 영화 같은 조명, 과도한 색감, 드론 촬영, 과도한 아웃포커싱, 완벽하게 정돈된 거리, 왜곡된 건물, 비정상적인 사람, 읽을 수 없는 글자, CGI 느낌, 과도하게 아름다운 풍경</p>
+      </div>
+    </article>
+  </template>
   <template id="detail-yt-J8cWZACnPJg">
     <article class="detail">
       <h3 class="detail__title">DAY 3</h3>
@@ -312,6 +345,25 @@
       <h4 class="detail__label">Negative prompt</h4>
       <div class="detail__text">
         <p>자동차, 주차된 차량, 오토바이, 번호판, 텍스트, 글자, 숫자, 간판, 도로 표지판, 광고판, 포스터, 현관 번호, 로고, 워터마크, 자막, 동기화된 걸음걸이, 같은 순간에 발을 내딛는 사람들, 동일한 보폭과 팔 움직임, 군대식 행진, 복제된 사람, 반복되는 보행 루프, 로봇 같은 움직임, 미끄러지는 발, 지면 위에 떠 있는 발, 뒤틀린 팔다리, 비현실적인 건물, 왜곡된 구조물, 판타지, 흐린 하늘, 짙은 안개, 극적인 노을, 영화 같은 조명, 과도한 렌즈 플레어, 과도한 채도, 청록색 열대 바다, 드론 촬영, 과도한 아웃포커싱, 완벽하게 정돈된 풍경, CGI 느낌, 과장된 파도, 빠른 카메라 움직임, 장면 전환.</p>
+      </div>
+    </article>
+  </template>
+  <template id="detail-yt-MX1UcJnpUdg">
+    <article class="detail">
+      <h3 class="detail__title">DAY 5</h3>
+      <dl class="detail__specs">
+        <div><dt>사용 모델</dt><dd>시댄스2, 길이:8초</dd></div>
+      </dl>
+      <h4 class="detail__label">Prompt</h4>
+      <div class="detail__text">
+        <p>독일의 강변 도시 로젠펠트(Rosenfeld)의 낡은 돌 포석 산책로와 작은 선착장을 누군가 스마트폰으로 무심하게 찍은 듯한 실제 일상 기록 영상. 늦가을의 평범한 오후, 옅은 구름 사이로 햇빛이 불규칙하게 떨어지는 강변의 풍경이다. 물가에는 물때가 끼고 페인트가 벗겨진 낡은 금속과 나무 기둥으로 된 선착장이 있으며, 산책로 주변에는 빛바랜 붉은 기와지붕과 벽면에 세월의 얼룩이 묻은 독일식 전통 건물들이 자연스럽게 서 있다. 바닥의 거친 돌 틈에는 마른 잡초와 흙먼지가 사실적으로 묘사된다. 강 건너편으로는 탁한 초록빛 숲과 평범한 언덕이 펼쳐진다.</p>
+        <p>거리를 두고 두 명의 평범한 사람이 있다. 한 사람은 구겨진 짙은 회색 방풍 재킷을 입고 카메라를 등진 채 약간 불규칙한 보폭으로 터벅터벅 걸어간다. 다른 사람은 강가 난간 근처에 서서 자신의 스마트폰을 보다가 고개를 들어 무심하게 강물을 바라본다. 두 사람의 움직임은 완벽하게 독립적이며, 각자의 체중 이동, 발이 땅에 닿는 충격, 옷 주름의 변화가 극도로 일상적이고 지루할 정도로 현실적이다.</p>
+        <p>카메라는 눈높이에서 일반 스마트폰 렌즈로 걸어가면서 촬영하는 시점이다. 걷는 보폭에 맞춘 불규칙하고 덜컹거리는 화면 흔들림, 걸을 때 발생하는 미세한 초점 변화와 렌즈의 자연스러운 모션 블러가 포함된 핸드헬드 촬영. 영화적인 조명이나 의도된 구도는 전혀 없으며, 앵글이 살짝 삐뚤어지거나 다듬어지지 않은 날것의 느낌을 준다.</p>
+        <p>후보정을 거치지 않은 듯한 밋밋하고 현실적인 색감. 강물은 과장된 에메랄드빛이 아닌 짙고 탁한 자연의 색이며, 수면 위로 차가운 바람에 의해 거칠고 불규칙한 잔물결이 일어난다. 그림자는 날카롭지 않고 구름 낀 날씨 특유의 부드럽게 퍼진 형태를 띤다. 관광 홍보 영상이나 영화가 아닌, 우연히 찍힌 브이로그 원본 클립 같은 완벽한 실사 영상.<br>8초, 16:9, 극사실주의 실사 영상.</p>
+      </div>
+      <h4 class="detail__label">Negative prompt</h4>
+      <div class="detail__text">
+        <p>CGI, 3D 렌더링, 언리얼 엔진, 게임 그래픽, 애니메이션, 영화적인 룩, 컬러 그레이딩, 짐벌 촬영, 드론 촬영, 완벽한 대칭, 과도한 아웃포커싱, 스톡 비디오 느낌, 렌즈 플레어, 슬로우 모션, 텍스트, 글자, 간판, 로고, 워터마크, 자동차, 주차된 차량, 오토바이, 번호판, 로봇 같은 어색한 걸음걸이, 미끄러지는 발, 공중에 뜬 발, 동기화된 움직임, 복제된 사람, 기괴한 인체 구조, 뒤틀린 손가락, 비현실적인 건축물, 쨍하고 과장된 채도, 투명한 바다, 짙은 안개, 드라마틱한 노을, 장면 전환.</p>
       </div>
     </article>
   </template>
