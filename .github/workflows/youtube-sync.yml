@@ -1,12 +1,16 @@
 # 유튜브 채널 AI영상팀(UCP9TZil5EtUoU3-BJULSpdg)에 새 영상(일부 공개 · 공개)이 올라오면 Works 에 'DAY N' 카드를 붙이고,
-# 영상 설명이 있으면 Details 로 만들어(고치면 따라감) 공개 사이트(이 브랜치)에 바로 반영한다. 한 시간마다 확인하고,
+# 영상 설명이 있으면 Details 로 만들어(고치면 따라감) 공개 사이트(이 브랜치)에 바로 반영한다. 5분마다 확인하고,
 # Actions 탭 → YouTube → Works → Run workflow 로 바로 돌릴 수도 있다.
 # 필요한 저장소 비밀값: YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
 name: YouTube → Works
 
 on:
+  # 5분마다 — GitHub 이 허용하는 가장 짧은 간격(공개 저장소라 무료, 유튜브 API 는 하루 한도의 약 1/10).
+  # GitHub 이 바쁠 때 예약 실행을 늦추거나 건너뛰기도 해서(10/3 저녁 한 시간 간격으로 세 번 연속 빠져
+  # DAY 6 이 네 시간 가까이 늦었다) 자주 돌려 두어 한두 번 빠져도 곧 다음 실행이 받게 했다. 가장 붐비는 정각은 피한다.
   schedule:
-    - cron: '17 * * * *'
+    - cron: '2 * * * *'                                    # 매시 02분 — 실패하면 실패로 표시(알림 메일)
+    - cron: '7,12,17,22,27,32,37,42,47,52,57 * * * *'      # 그 사이 — 실패해도 경고만(같은 문제로 5분마다 메일이 오지 않게)
   workflow_dispatch:
 
 permissions:
@@ -36,8 +40,15 @@ jobs:
 
       - name: 새 영상 · 설명 확인
         id: sync
-        run: node scripts/youtube-sync.mjs
+        run: |
+          node scripts/youtube-sync.mjs && exit 0
+          if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$SCHEDULE" != '2 * * * *' ]; then
+            echo "::warning::확인 실패 — 매시 02분 실행에서도 실패하면 실패로 알립니다"
+            exit 0
+          fi
+          exit 1
         env:
+          SCHEDULE: ${{ github.event.schedule }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}

@@ -1,6 +1,6 @@
 /**
  * 유튜브 채널 AI영상팀(@AI영상팀)의 영상을 Works 카드로 관리한다.
- * .github/workflows/youtube-sync.yml 이 한 시간마다 실행한다(로컬에서 직접 돌려도 된다).
+ * .github/workflows/youtube-sync.yml 이 5분마다 실행한다(로컬에서 직접 돌려도 된다).
  *
  * index.html 의 <!-- works:auto --> ~ <!-- /works:auto --> (DAY 2~) 와
  * <!-- details:auto --> ~ <!-- /details:auto --> 는 이 스크립트가 매번 다시 쓴다.
@@ -17,11 +17,11 @@
  * Details — 영상 설명이 있으면 붙고, 없으면 붙지 않는다. 설명을 고치거나 지우면 다음 실행 때 따라간다.
  * 설명은 줄 맨 앞의 머리말로 나눈다(대소문자 무관, 콜론은 : 또는 ：).
  *     사용 모델: wan        → 상단 표   (모델: 도 됨)
- *     길이: 8초             → 상단 표
+ *     길이: 8초             → 상단 표   ('사용 모델: wan, 길이: 8초' 처럼 한 줄에 적어도 됨)
  *     Prompt:              → 다음 머리말까지 Prompt            (프롬프트: 도 됨)
  *     Negative prompt:     → 다음 머리말까지 Negative prompt   (네거티브 프롬프트: 도 됨)
  *     Remarks:             → 다음 머리말까지 Remarks           (비고: 도 됨)
- * 머리말은 콜론이 없거나([Prompt], 📌 Prompt, Positive prompt 등) 조금 달라도 알아듣는다.
+ * 머리말은 콜론이 없거나([Prompt], 📌 Prompt, Positive prompt, [6일차 프롬프트] 등) 조금 달라도 알아듣는다.
  * Prompt 머리말 없이 쓴 본문은, 설명이 형식을 쓰고 있으면(사용 모델 · 길이 · Negative prompt 가 있음) Prompt 로 본다.
  * 형식 없이 쓴 설명이면 전체가 Remarks. #해시태그만 있는 줄은 늘 Remarks.
  * 그 밖에 남길 말은 Remarks: 머리말 아래에 쓴다.
@@ -138,15 +138,19 @@ for (const id of fresh) {
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 /* 머리말은 느슨하게 알아듣는다 — 앞의 글머리표 · 괄호 · 이모지, 뒤의 (한글 풀이) · 닫는 괄호를 허용하고,
    콜론 대신 - 도 되며, 머리말만 있는 줄이면 콜론이 없어도 된다(예: 'Prompt', '[Prompt]', '📌 Prompt :').
-   '#' 은 앞장식에서 뺀다 — '#prompt' 같은 해시태그 줄을 머리말로 읽지 않게 */
+   '#' 은 앞장식에서 뺀다 — '#prompt' 같은 해시태그 줄을 머리말로 읽지 않게.
+   앞에 'N일차' · 'DAY N' 을 붙인 머리말도 같다(예: '[6일차 프롬프트]' — DAY 4 · 6 에서 본문에 섞여 들어갔다) */
 const DECO = '[\\s\\-–—•·*>\\[\\(【「<〈\\p{Extended_Pictographic}\\uFE0F]*';
+const PRE = '(?:(?:day\\s*\\d+|\\d+\\s*일\\s*차)\\s*)?';
 const TAIL = '\\s*(?:[(\\[（【][^)\\]）】]*[)\\]）】])?\\s*[\\]\\)】」>〉]?\\s*';
-const spec = words => new RegExp(`^${DECO}(?:${words})${TAIL}[:：\\-–—]\\s*(.+)$`, 'iu');
-const head = words => new RegExp(`^${DECO}(?:${words})${TAIL}(?:[:：\\-–—]\\s*(.*))?$`, 'iu');
+const spec = words => new RegExp(`^${DECO}${PRE}(?:${words})${TAIL}[:：\\-–—]\\s*(.+)$`, 'iu');
+const head = words => new RegExp(`^${DECO}${PRE}(?:${words})${TAIL}(?:[:：\\-–—]\\s*(.*))?$`, 'iu');
 const SPECS = [
   ['사용 모델', spec('사용\\s*모델|모델|model')],
   ['길이', spec('길이|length|duration')]
 ];
+/* '사용 모델: 시댄스2, 길이: 8초' 처럼 한 줄에 둘을 적으면 나눈다(DAY 2 · 5 에서 길이가 모델 칸에 붙었다) */
+const SPEC_SPLIT = /\s*[,，/|·]\s*(?=(?:사용\s*모델|모델|model|길이|length|duration)\s*[:：])/iu;
 const HEADS = [
   ['negative', head('negative(?:\\s*prompts?)?|네거티브\\s*프롬프트|부정\\s*프롬프트')],
   ['prompt', head('(?:positive\\s*)?prompts?|(?:긍정\\s*)?프롬프트')],
@@ -161,7 +165,13 @@ function parse(description) {
   let cur = 'loose';                                /* 머리말 밖(첫 머리말 앞)의 글 */
   for (const raw of text.split('\n')) {
     const line = raw.trim();
-    const spec = SPECS.find(([name, re]) => re.test(line) && !d.specs.some(s => s[0] === name));
+    const freeSpec = l => SPECS.find(([name, re]) => re.test(l) && !d.specs.some(s => s[0] === name));
+    const parts = line.split(SPEC_SPLIT).map(p => [p, freeSpec(p)]);
+    if (parts.length > 1 && parts.every(([, s]) => s) && new Set(parts.map(([, s]) => s[0])).size === parts.length) {
+      for (const [p, [name, re]] of parts) d.specs.push([name, p.match(re)[1].trim()]);
+      continue;
+    }
+    const spec = freeSpec(line);
     if (spec) { d.specs.push([spec[0], line.match(spec[1])[1].trim()]); continue; }
     const head = HEADS.find(([, re]) => re.test(line));
     if (head) {
@@ -212,6 +222,7 @@ function detail(card, d) {
 
 const tpl = {};
 const changed = [];
+const withDetails = new Set();                     /* 새 카드 중 Details 까지 붙은 것 — 커밋 메시지에 보이게 */
 for (const c of cards) {
   const v = info[c.id];
   if (!v) {                                        /* 정보를 못 받으면(삭제 등) 있던 상세를 그대로 둔다 */
@@ -221,6 +232,7 @@ for (const c of cards) {
   const d = parse(v.snippet.description);
   if (d) tpl[c.id] = detail(c, d);
   const was = oldTpl[c.id], now = tpl[c.id];
+  if (added.includes(`DAY ${c.day}`) && now) withDetails.add(`DAY ${c.day}`);
   if (!added.includes(`DAY ${c.day}`) && was !== now) {
     changed.push(`DAY ${c.day} Details ${!was ? '추가' : !now ? '삭제' : '수정'}`);
   }
@@ -254,6 +266,7 @@ if (out === html) {
   process.exit(0);
 }
 writeFileSync(PAGE, out);
-const summary = [added.length && `${added.join(', ')} 자동 추가`, ...changed].filter(Boolean).join(', ');
-changed.forEach(s => console.log(s));
+const addedText = added.map(a => withDetails.has(a) ? `${a}(Details 포함)` : a).join(', ');
+const summary = [added.length && `${addedText} 자동 추가`, ...changed].filter(Boolean).join(', ');
+console.log('반영:', summary);
 if (GITHUB_OUTPUT) appendFileSync(GITHUB_OUTPUT, `summary=${summary}\n`);
