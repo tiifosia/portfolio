@@ -16,6 +16,8 @@ on:
 permissions:
   contents: write
   pages: write
+  actions: write        # 멈춘 사이트 배포를 취소하려고
+  deployments: read     # 사이트에 배포됐는지 보려고
 
 concurrency:
   group: youtube-sync
@@ -63,10 +65,9 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git commit -m "Works: $SUMMARY (유튜브 자동)"
+          # 사이트 배포는 이 푸시로 저절로 시작된다. 예전엔 여기서 한 번 더 요청해 배포가 둘씩 겹쳤고,
+          # 10/6 DAY 9 때 남은 쪽이 'waiting' 으로 멈춰 사이트에 11시간 안 보였다 → 따로 요청하지 않는다
           git push origin "HEAD:$SITE_BRANCH"
-          # 봇이 올린 커밋에도 Pages 가 다시 빌드되도록 한 번 더 요청한다(이미 빌드 중이어도 무해)
-          gh api -X POST "repos/$GITHUB_REPOSITORY/pages/builds" > /dev/null \
-            || echo "::warning::Pages 빌드 요청이 거절됐습니다 — 사이트 반영이 늦어질 수 있습니다"
 
       # 베타 브랜치도 새 카드를 받아 둔다(나중에 베타를 메인으로 올릴 때 어긋나지 않게).
       # 베타에서 같은 곳을 고치고 있어 합쳐지지 않으면 건드리지 않고 경고만 남긴다.
@@ -82,3 +83,30 @@ jobs:
             git merge --abort
             echo "::warning::$BETA_BRANCH 에 자동으로 합치지 못했습니다 — 베타를 메인으로 올리기 전에 메인을 합쳐 주세요"
           fi
+
+      # 공개 사이트에 실제로 배포됐는지 매번 확인하고, 멈춰 있으면 다시 띄운다.
+      # 맨 위 커밋이 10분 넘게 배포되지 않았고 그새 진행 중인 배포도 없으면(GitHub 쪽에서 멈춤 · 실패)
+      # 걸려 있는 배포를 취소하고 새로 요청한다. 5분마다 돌므로 멈춰도 30분 안쪽에 풀린다.
+      - name: 공개 사이트 배포 확인
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          R="repos/$GITHUB_REPOSITORY"
+          HEAD=$(gh api "$R/commits/$SITE_BRANCH" --jq .sha)
+          for D in $(gh api "$R/deployments?sha=$HEAD&environment=github-pages" --jq '.[].id'); do
+            if [ "$(gh api "$R/deployments/$D/statuses?per_page=1" --jq '.[0].state')" = success ]; then
+              echo "사이트에 배포됨: ${HEAD:0:7}"; exit 0
+            fi
+          done
+          AGE=$(( $(date +%s) - $(date -d "$(gh api "$R/commits/$HEAD" --jq .commit.committer.date)" +%s) ))
+          if [ "$AGE" -lt 600 ]; then echo "배포 기다리는 중: ${HEAD:0:7} (커밋 ${AGE}초 전)"; exit 0; fi
+          PAGES='.workflow_runs[] | select(.name == "pages build and deployment" and .status != "completed")'
+          if [ "$(gh api "$R/actions/runs?event=dynamic&per_page=30" --jq "[$PAGES | select(now - (.created_at | fromdateiso8601) < 600)] | length")" != 0 ]; then
+            echo "배포 진행 중 — 다음 실행에서 다시 확인"; exit 0
+          fi
+          for ID in $(gh api "$R/actions/runs?event=dynamic&per_page=30" --jq "$PAGES | .id"); do
+            gh api -X POST "$R/actions/runs/$ID/cancel" > /dev/null || gh api -X POST "$R/actions/runs/$ID/force-cancel" > /dev/null || true
+          done
+          echo "::warning::${HEAD:0:7} 이 $((AGE / 60))분째 사이트에 배포되지 않아 다시 배포를 요청합니다"
+          gh api -X POST "$R/pages/builds" > /dev/null
