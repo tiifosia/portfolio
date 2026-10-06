@@ -15,7 +15,10 @@ ids() { { grep -o 'data-video-id="[A-Za-z0-9_-]\{11\}"' || true; } | sort -u; }
 count() { grep -c . || true; }
 
 HEAD=$(gh api "$R/commits/$SITE_BRANCH" --jq .sha)
-AGE=$(( $(date +%s) - $(date -d "$(gh api "$R/commits/$HEAD" --jq .commit.committer.date)" +%s) ))
+# 얼마나 지났는지는 커밋을 만든 때가 아니라 메인에 푸시된 때부터 잰다(오래전에 만든 커밋을 방금 올릴 수도 있다)
+WHEN=$(gh api "$R/activity?ref=refs/heads/$SITE_BRANCH&activity_type=push&per_page=10" --jq "[.[] | select(.after == \"$HEAD\")][0].timestamp // empty" || true)
+[ -n "$WHEN" ] || WHEN=$(gh api "$R/commits/$HEAD" --jq .commit.committer.date)
+AGE=$(( $(date +%s) - $(date -d "$WHEN" +%s) ))
 WANT=$(gh api "$R/contents/index.html?ref=$HEAD" -H 'Accept: application/vnd.github.raw' | ids)
 
 DEPLOYED=no
@@ -35,7 +38,7 @@ if [ "$DEPLOYED" = yes ] && [ "$MISSING" = 0 ]; then
   echo "사이트 정상: ${HEAD:0:7} 배포됨, 영상 $(echo "$WANT" | count)개 모두 보임"
   exit 0
 fi
-echo "확인 필요: ${HEAD:0:7} (커밋 $((AGE / 60))분 전) — 배포 기록 ${DEPLOYED}, 사이트에 안 보이는 영상 ${MISSING}개"
+echo "확인 필요: ${HEAD:0:7} (푸시 $((AGE / 60))분 전) — 배포 기록 ${DEPLOYED}, 사이트에 안 보이는 영상 ${MISSING}개"
 if [ "$AGE" -lt 600 ]; then echo "배포를 기다리는 중"; exit 0; fi
 
 PAGES='.workflow_runs[] | select(.name == "pages build and deployment" and .status != "completed")'
