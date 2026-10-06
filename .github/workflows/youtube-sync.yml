@@ -26,6 +26,8 @@ concurrency:
 env:
   SITE_BRANCH: claude/video-portfolio-webpage-63opzb
   BETA_BRANCH: v2_beta
+  # 문제를 '실패'로 끝내 GitHub 알림 메일을 보낼 실행 — 매시 02분 예약 실행과 수동 실행만(5분마다 메일이 오지 않게)
+  LOUD: ${{ github.event_name != 'schedule' || github.event.schedule == '2 * * * *' }}
 
 jobs:
   sync:
@@ -44,22 +46,21 @@ jobs:
         id: sync
         run: |
           node scripts/youtube-sync.mjs && exit 0
-          if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$SCHEDULE" != '2 * * * *' ]; then
+          if [ "$LOUD" != true ]; then
             echo "::warning::확인 실패 — 매시 02분 실행에서도 실패하면 실패로 알립니다"
             exit 0
           fi
           exit 1
         env:
-          SCHEDULE: ${{ github.event.schedule }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
 
       - name: 공개 사이트에 반영
+        id: publish
         if: steps.sync.outputs.summary != ''
         env:
           SUMMARY: ${{ steps.sync.outputs.summary }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -69,10 +70,28 @@ jobs:
           # 10/6 DAY 9 때 남은 쪽이 'waiting' 으로 멈춰 사이트에 11시간 안 보였다 → 따로 요청하지 않는다
           git push origin "HEAD:$SITE_BRANCH"
 
+      # 공개 사이트에 맨 위 커밋이 실제로 보이는지 매번 확인하고, 멈춰 있으면 다시 배포한다.
+      # 1시간 넘게 안 풀리면 실패로 끝내 메일로 알린다(자세한 건 scripts/site-watch.sh).
+      - name: 공개 사이트 확인
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/site-watch.sh
+
+      # 올린 지 1시간이 넘도록 사이트에 못 올리는 영상(비공개 · 처리 멈춤 · 퍼가기 꺼짐)이 있으면 메일로 알린다.
+      - name: 못 올린 영상 알림
+        if: ${{ !cancelled() && steps.sync.outputs.alert != '' }}
+        env:
+          ALERT: ${{ steps.sync.outputs.alert }}
+        run: |
+          echo "::error::$ALERT — 유튜브에서 고치면 다음 확인 때 저절로 올라갑니다"
+          if [ "$LOUD" = true ]; then exit 1; fi
+
       # 베타 브랜치도 새 카드를 받아 둔다(나중에 베타를 메인으로 올릴 때 어긋나지 않게).
       # 베타에서 같은 곳을 고치고 있어 합쳐지지 않으면 건드리지 않고 경고만 남긴다.
+      # 앞의 확인 단계가 실패로 끝나도(알림 메일) 공개 사이트에 올라간 커밋이면 베타에도 넣는다.
       - name: v2_beta 에도 반영
-        if: steps.sync.outputs.summary != ''
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' }}
         run: |
           MAIN=$(git rev-parse HEAD)
           git fetch origin "$BETA_BRANCH"
@@ -83,30 +102,3 @@ jobs:
             git merge --abort
             echo "::warning::$BETA_BRANCH 에 자동으로 합치지 못했습니다 — 베타를 메인으로 올리기 전에 메인을 합쳐 주세요"
           fi
-
-      # 공개 사이트에 실제로 배포됐는지 매번 확인하고, 멈춰 있으면 다시 띄운다.
-      # 맨 위 커밋이 10분 넘게 배포되지 않았고 그새 진행 중인 배포도 없으면(GitHub 쪽에서 멈춤 · 실패)
-      # 걸려 있는 배포를 취소하고 새로 요청한다. 5분마다 돌므로 멈춰도 30분 안쪽에 풀린다.
-      - name: 공개 사이트 배포 확인
-        if: ${{ !cancelled() }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          R="repos/$GITHUB_REPOSITORY"
-          HEAD=$(gh api "$R/commits/$SITE_BRANCH" --jq .sha)
-          for D in $(gh api "$R/deployments?sha=$HEAD&environment=github-pages" --jq '.[].id'); do
-            if [ "$(gh api "$R/deployments/$D/statuses?per_page=1" --jq '.[0].state')" = success ]; then
-              echo "사이트에 배포됨: ${HEAD:0:7}"; exit 0
-            fi
-          done
-          AGE=$(( $(date +%s) - $(date -d "$(gh api "$R/commits/$HEAD" --jq .commit.committer.date)" +%s) ))
-          if [ "$AGE" -lt 600 ]; then echo "배포 기다리는 중: ${HEAD:0:7} (커밋 ${AGE}초 전)"; exit 0; fi
-          PAGES='.workflow_runs[] | select(.name == "pages build and deployment" and .status != "completed")'
-          if [ "$(gh api "$R/actions/runs?event=dynamic&per_page=30" --jq "[$PAGES | select(now - (.created_at | fromdateiso8601) < 600)] | length")" != 0 ]; then
-            echo "배포 진행 중 — 다음 실행에서 다시 확인"; exit 0
-          fi
-          for ID in $(gh api "$R/actions/runs?event=dynamic&per_page=30" --jq "$PAGES | .id"); do
-            gh api -X POST "$R/actions/runs/$ID/cancel" > /dev/null || gh api -X POST "$R/actions/runs/$ID/force-cancel" > /dev/null || true
-          done
-          echo "::warning::${HEAD:0:7} 이 $((AGE / 60))분째 사이트에 배포되지 않아 다시 배포를 요청합니다"
-          gh api -X POST "$R/pages/builds" > /dev/null

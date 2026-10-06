@@ -27,6 +27,7 @@
  * 그 밖에 남길 말은 Remarks: 머리말 아래에 쓴다.
  *
  * 바뀐 것이 있으면 GITHUB_OUTPUT 의 summary 로 알린다(커밋 메시지용).
+ * 올린 지 1시간이 넘도록 건너뛰는 영상(비공개 · 처리 멈춤 · 퍼가기 꺼짐)이 있으면 alert 로 알린다(올린 뒤 하루 동안).
  * 필요한 환경 변수(저장소 비밀값): YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
  */
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
@@ -120,6 +121,7 @@ for (let i = 0; i < ids.length; i += 50) {
 /* ---------- 새 카드 ---------- */
 let day = Math.max(0, ...[...html.matchAll(/class="work__title">DAY (\d+)</g)].map(m => +m[1]));
 const added = [];
+const alerts = [];
 for (const id of fresh) {
   const v = info[id];
   const why = !v ? '정보 없음'
@@ -127,11 +129,22 @@ for (const id of fresh) {
     : v.status.uploadStatus !== 'processed' ? '처리 중(' + v.status.uploadStatus + ')'
     : v.status.embeddable === false ? '퍼가기 허용이 꺼져 있음'
     : '';
-  if (why) { console.log(`건너뜀 ${id}: ${why}`); continue; }
+  if (why) {
+    console.log(`건너뜀 ${id}: ${why}`);
+    /* 조용히 계속 건너뛰면 아무도 모른다 — 실수로 비공개로 올렸거나 처리가 멈춘 경우 */
+    const mins = v ? (Date.now() - Date.parse(v.snippet.publishedAt)) / 60000 : 0;
+    if (mins > 60 && mins < 1440) alerts.push(`'${v.snippet.title}' 를 ${Math.floor(mins / 60)}시간째 올리지 못함 — ${why}`);
+    continue;
+  }
   day += 1;
   cards.push({ id, day, meta: YEAR });
   added.push(`DAY ${day}`);
   console.log(`추가 DAY ${day}: ${id} (${v.snippet.title})`);
+}
+
+if (alerts.length) {
+  console.log('::warning::' + alerts.join(' / '));
+  if (GITHUB_OUTPUT) appendFileSync(GITHUB_OUTPUT, `alert=${alerts.join(' / ')}\n`);
 }
 
 /* ---------- 설명 → 상세 ---------- */
