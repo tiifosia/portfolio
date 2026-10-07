@@ -156,17 +156,25 @@
 /**
  * 썸네일 폴백
  * 고화질 썸네일(maxresdefault)이 없는 영상은 hqdefault 로 교체한다.
+ * 유튜브는 없는 썸네일에도 '없음'과 함께 120×90 회색 기본 이미지를 보내서, 오류가 아니라 그 회색 이미지가
+ * 그대로 뜬다(DAY 9 — 480p 로 올린 영상은 고화질 썸네일이 없다). 그래서 받은 이미지의 크기로도 알아본다.
  */
 (function () {
   'use strict';
 
   var imgs = document.querySelectorAll('.work__thumb img[data-fallback]');
+  var swap = function (img) {
+    if (img.src === img.dataset.fallback) return;
+    img.src = img.dataset.fallback;
+  };
+  var check = function (img) {
+    if (img.naturalWidth && img.naturalWidth <= 120) swap(img);
+  };
 
   for (var i = 0; i < imgs.length; i++) {
-    imgs[i].addEventListener('error', function () {
-      if (this.src === this.dataset.fallback) return;
-      this.src = this.dataset.fallback;
-    });
+    imgs[i].addEventListener('error', function () { swap(this); });
+    imgs[i].addEventListener('load', function () { check(this); });
+    if (imgs[i].complete) check(imgs[i]);      /* 이 스크립트보다 먼저 받아진 경우 */
   }
 })();
 

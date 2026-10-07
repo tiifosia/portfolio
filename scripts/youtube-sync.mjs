@@ -13,6 +13,7 @@
  * - 일부 공개 · 공개이고 처리가 끝난 영상만 넣는다. 비공개는 방문자가 재생할 수 없어 건너뛰고,
  *   나중에 일부 공개로 바꾸면 그다음 실행 때 들어간다.
  * - 제목은 지금 있는 가장 큰 DAY 번호 + 1, 아래 정보는 올린 날짜와 상관없이 늘 YEAR(2026).
+ * - 썸네일은 유튜브가 실제로 만든 것 중 가장 큰 것(고화질 → 640 → 480). 480p 로 올린 영상은 고화질이 없다.
  *
  * Details — 영상 설명이 있으면 붙고, 없으면 붙지 않는다. 설명을 고치거나 지우면 다음 실행 때 따라간다.
  * 설명은 줄 맨 앞의 머리말로 나눈다(대소문자 무관, 콜론은 : 또는 ：).
@@ -102,7 +103,8 @@ if (works.to > details.from) throw new Error('works:auto 가 details:auto 보다
 const cards = [...works.body.matchAll(/<li\b[\s\S]*?<\/li>/g)].map(([li]) => ({
   id: li.match(/data-video-id="([\w-]{11})"/)?.[1],
   day: +li.match(/class="work__title">DAY (\d+)</)?.[1],
-  meta: li.match(/class="work__meta">([^<]*)</)?.[1] ?? YEAR
+  meta: li.match(/class="work__meta">([^<]*)</)?.[1] ?? YEAR,
+  thumb: li.match(/src="https:\/\/img\.youtube\.com\/vi\/[\w-]{11}\/(\w+)\.jpg"/)?.[1] ?? 'maxresdefault'
 }));
 if (cards.some(c => !c.id || !c.day)) throw new Error('works:auto 안의 카드를 읽지 못했습니다');
 const oldTpl = {};
@@ -117,6 +119,11 @@ for (let i = 0; i < ids.length; i += 50) {
   const page = await api('videos', { part: 'status,snippet', id: ids.slice(i, i + 50).join(',') });
   for (const v of page.items) info[v.id] = v;
 }
+
+/* 썸네일 — 유튜브가 실제로 만든 것 중 가장 큰 것. 없는 크기의 주소는 회색 기본 이미지를 돌려준다
+   (DAY 9: 480p 로 올라가 고화질이 없었는데 그 주소를 써서 사이트에 회색 썸네일이 떴다) */
+const THUMBS = [['maxres', 'maxresdefault'], ['standard', 'sddefault'], ['high', 'hqdefault']];
+const bestThumb = v => THUMBS.find(([k]) => v.snippet.thumbnails?.[k])?.[1];
 
 /* ---------- 새 카드 ---------- */
 let day = Math.max(0, ...[...html.matchAll(/class="work__title">DAY (\d+)</g)].map(m => +m[1]));
@@ -137,7 +144,7 @@ for (const id of fresh) {
     continue;
   }
   day += 1;
-  cards.push({ id, day, meta: YEAR });
+  cards.push({ id, day, meta: YEAR, thumb: bestThumb(v) || 'hqdefault' });
   added.push(`DAY ${day}`);
   console.log(`추가 DAY ${day}: ${id} (${v.snippet.title})`);
 }
@@ -242,6 +249,11 @@ for (const c of cards) {
     if (oldTpl[c.id]) tpl[c.id] = oldTpl[c.id];
     continue;
   }
+  const thumb = bestThumb(v);                      /* 처리 중이라 아직 없으면 있던 것 그대로 */
+  if (thumb && thumb !== c.thumb) {
+    if (!added.includes(`DAY ${c.day}`)) changed.push(`DAY ${c.day} 썸네일 수정`);
+    c.thumb = thumb;
+  }
   const d = parse(v.snippet.description);
   if (d) tpl[c.id] = detail(c, d);
   const was = oldTpl[c.id], now = tpl[c.id];
@@ -257,7 +269,7 @@ const card = c => [
   `          data-video-id="${c.id}"`,
   `          aria-label="DAY ${c.day} 영상 재생">`,
   `    <figure class="work__thumb">`,
-  `      <img src="https://img.youtube.com/vi/${c.id}/maxresdefault.jpg"`,
+  `      <img src="https://img.youtube.com/vi/${c.id}/${c.thumb}.jpg"`,
   `           data-fallback="https://img.youtube.com/vi/${c.id}/hqdefault.jpg"`,
   `           alt="" loading="lazy">`,
   `    </figure>`,
