@@ -22,7 +22,9 @@
  *     Prompt:              → 다음 머리말까지 Prompt            (프롬프트: 도 됨)
  *     Negative prompt:     → 다음 머리말까지 Negative prompt   (네거티브 프롬프트: 도 됨)
  *     Remarks:             → 다음 머리말까지 Remarks           (비고: 도 됨)
- * 머리말은 콜론이 없거나([Prompt], 📌 Prompt, Positive prompt, [6일차 프롬프트] 등) 조금 달라도 알아듣는다.
+ * 머리말은 콜론이 없거나([Prompt], 📌 Prompt, Positive prompt, [6일차 프롬프트], [영상 프롬프트] 등) 조금 달라도 알아듣고,
+ * 'Prompt 본문…' · 'Negative Prompt 본문…' 처럼 콜론 없이 바로 이어 써도 된다.
+ * 이름표 없이 쓴 첫 줄('시댄스2 길이8초')에서도 모델 · 길이를 뽑는다. 장소: · 화면 비율: 도 상단 표로.
  * Prompt 머리말 없이 쓴 본문은, 설명이 형식을 쓰고 있으면(사용 모델 · 길이 · Negative prompt 가 있음) Prompt 로 본다.
  * 형식 없이 쓴 설명이면 전체가 Remarks. #해시태그만 있는 줄은 늘 Remarks.
  * 그 밖에 남길 말은 Remarks: 머리말 아래에 쓴다.
@@ -165,17 +167,50 @@ const PRE = '(?:(?:day\\s*\\d+|\\d+\\s*일\\s*차)\\s*)?';
 const TAIL = '\\s*(?:[(\\[（【][^)\\]）】]*[)\\]）】])?\\s*[\\]\\)】」>〉]?\\s*';
 const spec = words => new RegExp(`^${DECO}${PRE}(?:${words})${TAIL}[:：\\-–—]\\s*(.+)$`, 'iu');
 const head = words => new RegExp(`^${DECO}${PRE}(?:${words})${TAIL}(?:[:：\\-–—]\\s*(.*))?$`, 'iu');
-const SPECS = [
-  ['사용 모델', spec('사용\\s*모델|모델|model')],
-  ['길이', spec('길이|length|duration')]
+const SPEC_WORDS = [
+  ['사용 모델', '사용\\s*모델|모델|model'],
+  ['길이', '길이|length|duration'],
+  ['장소', '장소|location'],
+  ['화면 비율', '화면\\s*비율|aspect\\s*ratio']
 ];
+const SPECS = SPEC_WORDS.map(([name, words]) => [name, spec(words)]);
 /* '사용 모델: 시댄스2, 길이: 8초' 처럼 한 줄에 둘을 적으면 나눈다(DAY 2 · 5 에서 길이가 모델 칸에 붙었다) */
-const SPEC_SPLIT = /\s*[,，/|·]\s*(?=(?:사용\s*모델|모델|model|길이|length|duration)\s*[:：])/iu;
-const HEADS = [
-  ['negative', head('negative(?:\\s*prompts?)?|네거티브\\s*프롬프트|부정\\s*프롬프트')],
-  ['prompt', head('(?:positive\\s*)?prompts?|(?:긍정\\s*)?프롬프트')],
-  ['remarks', head('remarks?|비고|메모')]
+const SPEC_SPLIT = new RegExp(`\\s*[,，/|·]\\s*(?=(?:${SPEC_WORDS.map(w => w[1]).join('|')})\\s*[:：])`, 'iu');
+const HEAD_WORDS = [
+  ['negative', 'negative(?:\\s*prompts?)?|네거티브(?:\\s*프롬프트)?|부정\\s*프롬프트'],
+  ['prompt', '(?:positive\\s*)?prompts?|(?:긍정\\s*)?프롬프트'],
+  ['remarks', 'remarks?|비고|메모']
 ];
+const HEADS = HEAD_WORDS.map(([kind, words]) => [kind, head(words)]);
+/* 콜론 없이 머리말 뒤에 바로 본문을 이어 쓴 줄 — 'Prompt A strictly…', 'Negative Prompt CGI, …' (DAY 11).
+   그 머리말이 아직 안 나왔고, 설명에 다른 형식 단서(모델 · 길이 · 다른 머리말)가 더 있을 때만 머리말로 본다
+   ('Prompt:' 아래 'Prompt engineering…' 같은 본문이나, 형식 없이 'Prompt engineering…' 으로 시작한 자유 글은 그대로) */
+const INLINE = HEAD_WORDS.map(([kind, words]) => [kind, new RegExp(`^${DECO}${PRE}(?:${words})\\s+(\\S.*)$`, 'iu')]);
+/* 괄호로 감싼 머리말 줄 — 안에 무엇을 붙여도 된다: '[영상 프롬프트]', '【6일차 네거티브】' (DAY 10) */
+const boxed = line => {
+  const m = line.match(/^[\[【(<〈「]\s*([^\]】)>〉」]{1,30})\s*[\]】)>〉」]\s*[:：]?$/u);
+  if (!m) return null;
+  const kind = HEAD_WORDS.find(([, words]) => new RegExp(`(?:${words})`, 'iu').test(m[1]));
+  return kind ? kind[0] : null;
+};
+/* 이름표 없이 쓴 첫 줄 — '시댄스2 길이8초', 'Seedance 2.0 / 8s' (DAY 11). 본문이 시작되기 전의 짧은 줄만 본다 */
+const MODEL = /^(?:시댄스|seedance|kling|클링|wan|veo|sora|소라|runway|런웨이|hailuo|하이루오|minimax|미니맥스|pika|피카|luma|루마|hunyuan|vidu|midjourney)[\s\-]*[\w.\- ]{0,15}$/iu;
+const DUR = '\\d+(?:\\.\\d+)?\\s*(?:초|seconds?|secs?|s)';
+function bareSpecs(line) {
+  if (line.length > 40) return null;
+  let rest = line, len = null;
+  const labeled = rest.match(new RegExp(`(?:길이|length|duration)\\s*[:：]?\\s*(${DUR})`, 'iu'));
+  const trailing = !labeled && rest.match(new RegExp(`[\\s,，/|·]+(${DUR})\\s*$`, 'iu'));
+  if (labeled || trailing) { len = (labeled || trailing)[1].replace(/\s+/g, ''); rest = rest.replace((labeled || trailing)[0], ' '); }
+  rest = rest.replace(/^[\s,，/|·]+|[\s,，/|·]+$/g, '');
+  const tag = rest.match(/^(?:사용\s*모델|모델|model)\s*[:：]?\s*(.+)$/iu);
+  const model = tag ? tag[1].trim() : MODEL.test(rest) ? rest : '';
+  if (rest && !model) return null;                  /* 모델 이름으로 안 보이는 말이 섞이면 줄 전체를 본문으로 */
+  const out = [];
+  if (model) out.push(['사용 모델', model]);
+  if (len) out.push(['길이', len]);
+  return out.length ? out : null;
+}
 
 function parse(description) {
   const text = (description || '').replace(/\r\n?/g, '\n').trim();
@@ -183,7 +218,10 @@ function parse(description) {
   const d = { specs: [], prompt: [], negative: [], remarks: [], loose: [] };
   const seen = new Set();
   let cur = 'loose';                                /* 머리말 밖(첫 머리말 앞)의 글 */
-  for (const raw of text.split('\n')) {
+  const lines = text.split('\n').map(l => l.trim());
+  const cues = lines.filter((l, i) => SPECS.some(([, re]) => re.test(l)) || HEADS.some(([, re]) => re.test(l))
+    || INLINE.some(([, re]) => re.test(l)) || boxed(l) || (i === 0 && bareSpecs(l))).length;
+  for (const raw of lines) {
     const line = raw.trim();
     const freeSpec = l => SPECS.find(([name, re]) => re.test(l) && !d.specs.some(s => s[0] === name));
     const parts = line.split(SPEC_SPLIT).map(p => [p, freeSpec(p)]);
@@ -193,12 +231,23 @@ function parse(description) {
     }
     const spec = freeSpec(line);
     if (spec) { d.specs.push([spec[0], line.match(spec[1])[1].trim()]); continue; }
+    const bare = cur === 'loose' && !seen.size && !d.loose.some(Boolean) && bareSpecs(line);
+    if (bare && bare.every(([name]) => !d.specs.some(s => s[0] === name))) { d.specs.push(...bare); continue; }
+    const box = boxed(line);
+    if (box) { cur = box; seen.add(cur); continue; }
     const head = HEADS.find(([, re]) => re.test(line));
     if (head) {
       cur = head[0];
       seen.add(cur);
       const rest = (line.match(head[1])[1] || '').trim();
       if (rest) d[cur].push(rest);
+      continue;
+    }
+    const inline = cues >= 2 && INLINE.find(([kind, re]) => !seen.has(kind) && re.test(line));
+    if (inline) {
+      cur = inline[0];
+      seen.add(cur);
+      d[cur].push(line.match(inline[1])[1].trim());
       continue;
     }
     if (/^(#[^\s#]+\s*)+$/.test(line)) {           /* 해시태그만 있는 줄 */
